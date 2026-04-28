@@ -1,0 +1,37 @@
+# Maven build output
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDE files
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+*.classpath
+*.project
+*.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
+.env
+.env.local
+application-local.properties
+application-secret.properties
+
+# Logs
+*.log
+logs/
+
+# Compiled class files
+*.class
+
+# Package files
+*.jar
+*.war
+*.ear
