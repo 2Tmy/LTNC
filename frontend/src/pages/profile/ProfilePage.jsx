@@ -1,41 +1,29 @@
 import AccountInfoCard from "../../components/profile/AccountInfoCard.jsx";
 import ProfileForm from "../../components/profile/ProfileForm.jsx";
+import { useCurrentUser } from "../../hooks/useCurrentUser.js";
 import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
-import { getAllComplaints } from "../../mocks/complaintsMock.js";
-
-const avatarUrl =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuCILdE8Jy3Lovzgf3qbggg6eMbkGXFMM0_IlYPeo47SssEUV8gxncDTDjX9AtQFqHLTwCmIZQ0hK6va9wvaiQM9lXBXTf63pZbGLzVDLMrt-4rO-cy-N-Nd9E80RfKk0uB0rkRsKHr52jdXzUnjEFj0CCykfJxZqtiin5iSCKPj6DfclgYRJGcvXQUwH4EmHkQ-e1ltK7_wJwrJ4LF4vMAOW4vxt6x7ZhunDPDJ1pdciokKBkOX2emCM48Z0eOTTzKFf9ra6mRlRBc7";
-
-const getProfile = () => {
-  let parsedProfile = {};
-
-  try {
-    const savedProfile = window.localStorage.getItem("demoProfile");
-    parsedProfile = savedProfile ? JSON.parse(savedProfile) : {};
-  } catch {
-    parsedProfile = {};
-  }
-
-  const name = parsedProfile.name || window.localStorage.getItem("demoName") || "Demo Customer";
-  const email = parsedProfile.email || window.localStorage.getItem("demoEmail") || "my@gmail.com";
-  const complaints = getAllComplaints();
-
-  return {
-    name,
-    firstName: name.split(" ")[0],
-    email,
-    phone: parsedProfile.phone || "(555) 012-4567",
-    address: parsedProfile.address || "123 Service Avenue, Customer City",
-    preferredContact: parsedProfile.preferredContact || "Email",
-    memberSince: "Oct 2023",
-    openComplaints: complaints.filter((complaint) => complaint.status !== "Resolved").length,
-    avatarUrl,
-  };
-};
 
 export default function ProfilePage() {
-  const user = getProfile();
+  const baseUser = useCurrentUser();
+
+  // Merge real user data with any locally saved profile extras (phone, address)
+  let savedExtras = {};
+  try {
+    const raw = window.localStorage.getItem("demoProfile");
+    savedExtras = raw ? JSON.parse(raw) : {};
+  } catch {
+    savedExtras = {};
+  }
+
+  const user = {
+    ...baseUser,
+    phone: savedExtras.phone || "",
+    address: savedExtras.address || "",
+    preferredContact: savedExtras.preferredContact || "Email",
+    memberSince: "2024",
+    openComplaints: 0,
+  };
 
   const handleSave = (profile) => {
     window.localStorage.setItem("demoProfile", JSON.stringify(profile));

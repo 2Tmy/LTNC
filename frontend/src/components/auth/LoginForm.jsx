@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { authenticateMockUser } from "../../mocks/authMock.js";
+import { login } from "../../services/authService.js";
 import { ROUTE_PATHS, USER_ROLES } from "../../routes/routePaths.js";
 
 const fieldBase =
@@ -15,6 +15,7 @@ export default function LoginForm() {
     remember: true,
   });
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const updateField = (event) => {
     const { name, type, checked, value } = event.target;
@@ -42,29 +43,33 @@ export default function LoginForm() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!validate()) {
-      return;
+    if (!validate()) return;
+
+    setLoading(true);
+    setErrors({});
+
+    try {
+      const res = await login(form.email, form.password);
+      const { token, role, name, email } = res.data.data;
+
+      // Map backend role to frontend route role
+      const routeRole = role === "CUSTOMER" ? USER_ROLES.customer : USER_ROLES.admin;
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("demoRole", routeRole);
+      localStorage.setItem("demoEmail", email);
+      localStorage.setItem("demoName", name);
+
+      navigate(routeRole === USER_ROLES.admin ? ROUTE_PATHS.adminDashboard : ROUTE_PATHS.customerDashboard);
+    } catch (err) {
+      const message = err.response?.data?.message || "Something went wrong. Please try again.";
+      setErrors({ form: message });
+    } finally {
+      setLoading(false);
     }
-
-    const authenticatedUser = authenticateMockUser(form);
-
-    if (!authenticatedUser) {
-      setErrors({
-        form: "Email, password, or account type is incorrect.",
-      });
-      return;
-    }
-
-    window.localStorage.setItem("demoRole", authenticatedUser.role);
-    window.localStorage.setItem("demoEmail", authenticatedUser.email);
-    window.localStorage.setItem("demoName", authenticatedUser.name);
-
-    navigate(
-      authenticatedUser.role === USER_ROLES.admin ? ROUTE_PATHS.adminDashboard : ROUTE_PATHS.customerDashboard
-    );
   };
 
   return (
@@ -166,11 +171,12 @@ export default function LoginForm() {
       ) : null}
 
       <button
-        className="flex w-full items-center justify-center gap-xs rounded-[0.5rem] bg-primary px-lg py-sm text-button text-on-primary shadow-sm transition hover:bg-primary-container focus:outline-none focus:ring-2 focus:ring-primary/25"
+        className="flex w-full items-center justify-center gap-xs rounded-[0.5rem] bg-primary px-lg py-sm text-button text-on-primary shadow-sm transition hover:bg-primary-container focus:outline-none focus:ring-2 focus:ring-primary/25 disabled:opacity-60"
         type="submit"
+        disabled={loading}
       >
         <span className="material-symbols-outlined text-[20px]">login</span>
-        Sign in
+        {loading ? "Signing in..." : "Sign in"}
       </button>
 
       <p className="text-center text-body-sm text-on-surface-variant">

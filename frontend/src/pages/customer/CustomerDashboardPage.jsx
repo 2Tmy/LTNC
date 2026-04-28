@@ -2,19 +2,11 @@ import { useNavigate } from "react-router-dom";
 import ComplaintStepper from "../../components/complaint/ComplaintStepper.jsx";
 import ComplaintTable from "../../components/complaint/ComplaintTable.jsx";
 import StatCard from "../../components/customer/StatCard.jsx";
+import { useCurrentUser } from "../../hooks/useCurrentUser.js";
 import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
 import { getAllComplaints } from "../../mocks/complaintsMock.js";
 import { ROUTE_PATHS } from "../../routes/routePaths.js";
-
-const avatarUrl =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuCILdE8Jy3Lovzgf3qbggg6eMbkGXFMM0_IlYPeo47SssEUV8gxncDTDjX9AtQFqHLTwCmIZQ0hK6va9wvaiQM9lXBXTf63pZbGLzVDLMrt-4rO-cy-N-Nd9E80RfKk0uB0rkRsKHr52jdXzUnjEFj0CCykfJxZqtiin5iSCKPj6DfclgYRJGcvXQUwH4EmHkQ-e1ltK7_wJwrJ4LF4vMAOW4vxt6x7ZhunDPDJ1pdciokKBkOX2emCM48Z0eOTTzKFf9ra6mRlRBc7";
-
-const user = {
-  firstName: "Alex",
-  name: "Alex Johnson",
-  avatarUrl,
-};
 
 const stats = [
   {
@@ -61,6 +53,7 @@ const statusSteps = [
 
 export default function CustomerDashboardPage() {
   const navigate = useNavigate();
+  const user = useCurrentUser();
   const complaints = getAllComplaints();
 
   return (

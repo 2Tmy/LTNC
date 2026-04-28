@@ -1,15 +1,10 @@
 import AdminComplaintsTable from "../../../components/staff/AdminComplaintsTable.jsx";
 import AdminMetricCard from "../../../components/staff/AdminMetricCard.jsx";
 import ComplaintsBarChart from "../../../components/staff/ComplaintsBarChart.jsx";
+import { useCurrentUser } from "../../../hooks/useCurrentUser.js";
 import AdminSidebar from "../../../layouts/AdminSidebar.jsx";
 import AdminTopBar from "../../../layouts/AdminTopBar.jsx";
 import { ROUTE_PATHS } from "../../../routes/routePaths.js";
-
-const adminUser = {
-  name: "Admin",
-  avatarUrl:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuCILdE8Jy3Lovzgf3qbggg6eMbkGXFMM0_IlYPeo47SssEUV8gxncDTDjX9AtQFqHLTwCmIZQ0hK6va9wvaiQM9lXBXTf63pZbGLzVDLMrt-4rO-cy-N-Nd9E80RfKk0uB0rkRsKHr52jdXzUnjEFj0CCykfJxZqtiin5iSCKPj6DfclgYRJGcvXQUwH4EmHkQ-e1ltK7_wJwrJ4LF4vMAOW4vxt6x7ZhunDPDJ1pdciokKBkOX2emCM48Z0eOTTzKFf9ra6mRlRBc7",
-};
 
 const metrics = [
   {
@@ -103,12 +98,14 @@ const recentComplaints = [
 ];
 
 export default function StaffDashboardPage() {
+  const user = useCurrentUser();
+
   return (
     <div className="flex min-h-screen bg-surface text-on-background">
       <AdminSidebar />
 
       <main className="min-w-0 flex-1">
-        <AdminTopBar user={adminUser} />
+        <AdminTopBar user={user} />
 
         <div className="mx-auto max-w-[1180px] space-y-lg p-xl">
           <section className="grid grid-cols-1 gap-gutter sm:grid-cols-2 xl:grid-cols-4">

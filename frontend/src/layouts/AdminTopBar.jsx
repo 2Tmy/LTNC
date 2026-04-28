@@ -44,7 +44,7 @@ export default function AdminTopBar({ user }) {
         <button className="text-on-surface md:hidden" type="button" aria-label="Open admin navigation">
           <span className="material-symbols-outlined">menu</span>
         </button>
-        <h1 className="text-[28px] font-semibold leading-9 tracking-normal text-on-surface">Good morning, Admin</h1>
+        <h1 className="text-[28px] font-semibold leading-9 tracking-normal text-on-surface">Good morning, {user.firstName || user.name}</h1>
       </div>
 
       <div className="flex items-center gap-lg">

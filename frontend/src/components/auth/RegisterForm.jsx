@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { register } from "../../services/authService.js";
 import { ROUTE_PATHS, USER_ROLES } from "../../routes/routePaths.js";
 
 const fieldBase =
@@ -16,6 +17,7 @@ export default function RegisterForm() {
     terms: false,
   });
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const updateField = (event) => {
     const { name, type, checked, value } = event.target;
@@ -59,18 +61,30 @@ export default function RegisterForm() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!validate()) {
-      return;
+    if (!validate()) return;
+
+    setLoading(true);
+    setErrors({});
+
+    try {
+      const res = await register(form.fullName, form.email, form.password);
+      const { token, name, email } = res.data.data;
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("demoRole", USER_ROLES.customer);
+      localStorage.setItem("demoEmail", email);
+      localStorage.setItem("demoName", name);
+
+      navigate(ROUTE_PATHS.customerDashboard);
+    } catch (err) {
+      const message = err.response?.data?.message || "Registration failed. Please try again.";
+      setErrors({ form: message });
+    } finally {
+      setLoading(false);
     }
-
-    window.localStorage.setItem("demoRole", USER_ROLES.customer);
-    window.localStorage.setItem("demoEmail", form.email);
-    window.localStorage.setItem("demoName", form.fullName);
-
-    navigate(ROUTE_PATHS.customerDashboard);
   };
 
   const renderTextField = ({ id, label, type = "text", autoComplete, placeholder, icon }) => (
@@ -159,12 +173,19 @@ export default function RegisterForm() {
         {errors.terms ? <p className="text-body-sm text-error">{errors.terms}</p> : null}
       </div>
 
+      {errors.form ? (
+        <div className="rounded-[0.5rem] border border-error-container bg-error-container px-md py-sm text-body-sm text-on-error-container">
+          {errors.form}
+        </div>
+      ) : null}
+
       <button
-        className="flex w-full items-center justify-center gap-xs rounded-[0.5rem] bg-primary px-lg py-sm text-button text-on-primary shadow-sm transition hover:bg-primary-container focus:outline-none focus:ring-2 focus:ring-primary/25"
+        className="flex w-full items-center justify-center gap-xs rounded-[0.5rem] bg-primary px-lg py-sm text-button text-on-primary shadow-sm transition hover:bg-primary-container focus:outline-none focus:ring-2 focus:ring-primary/25 disabled:opacity-60"
         type="submit"
+        disabled={loading}
       >
         <span className="material-symbols-outlined text-[20px]">person_add</span>
-        Create account
+        {loading ? "Creating account..." : "Create account"}
       </button>
 
       <p className="text-center text-body-sm text-on-surface-variant">
