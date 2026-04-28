@@ -1,4 +1,4 @@
-# VISHIPEL – Customer Complaint Management System
+# Customer Complaint Management System
 
 A full-stack web application for managing customer complaints.
 Built with **React 19 + Vite** (frontend) and **Spring Boot 3.4 + PostgreSQL** (backend).
