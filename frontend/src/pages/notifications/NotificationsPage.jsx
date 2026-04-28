@@ -1,19 +1,12 @@
 import { useMemo, useState } from "react";
 import NotificationList from "../../components/notifications/NotificationList.jsx";
+import { useCurrentUser } from "../../hooks/useCurrentUser.js";
 import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
 import { getStoredNotifications, saveStoredNotifications } from "../../mocks/notificationsMock.js";
 
-const avatarUrl =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuCILdE8Jy3Lovzgf3qbggg6eMbkGXFMM0_IlYPeo47SssEUV8gxncDTDjX9AtQFqHLTwCmIZQ0hK6va9wvaiQM9lXBXTf63pZbGLzVDLMrt-4rO-cy-N-Nd9E80RfKk0uB0rkRsKHr52jdXzUnjEFj0CCykfJxZqtiin5iSCKPj6DfclgYRJGcvXQUwH4EmHkQ-e1ltK7_wJwrJ4LF4vMAOW4vxt6x7ZhunDPDJ1pdciokKBkOX2emCM48Z0eOTTzKFf9ra6mRlRBc7";
-
-const user = {
-  firstName: (window.localStorage.getItem("demoName") || "Demo Customer").split(" ")[0],
-  name: window.localStorage.getItem("demoName") || "Demo Customer",
-  avatarUrl,
-};
-
 export default function NotificationsPage() {
+  const user = useCurrentUser();
   const [notifications, setNotifications] = useState(() => getStoredNotifications());
   const [filter, setFilter] = useState("all");
 

@@ -1,19 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useCurrentUser } from "../../hooks/useCurrentUser.js";
 import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
 import { getStoredComplaints } from "../../mocks/complaintsMock.js";
 import { ROUTE_PATHS } from "../../routes/routePaths.js";
 import { createStaffComplaintSubmittedNotification } from "../../services/notificationService.js";
-
-const avatarUrl =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuCILdE8Jy3Lovzgf3qbggg6eMbkGXFMM0_IlYPeo47SssEUV8gxncDTDjX9AtQFqHLTwCmIZQ0hK6va9wvaiQM9lXBXTf63pZbGLzVDLMrt-4rO-cy-N-Nd9E80RfKk0uB0rkRsKHr52jdXzUnjEFj0CCykfJxZqtiin5iSCKPj6DfclgYRJGcvXQUwH4EmHkQ-e1ltK7_wJwrJ4LF4vMAOW4vxt6x7ZhunDPDJ1pdciokKBkOX2emCM48Z0eOTTzKFf9ra6mRlRBc7";
-
-const user = {
-  firstName: "Alex",
-  name: window.localStorage.getItem("demoName") || "Alex Johnson",
-  avatarUrl,
-};
 
 const inputClass =
   "w-full rounded-[0.5rem] border border-outline-variant bg-white px-md py-sm text-body-md text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15";
@@ -22,6 +14,7 @@ const categories = ["Delivery", "Billing", "Technical", "Product Quality", "Acco
 const priorities = ["Low", "Medium", "High", "Urgent"];
 
 export default function SubmitComplaintPage() {
+  const user = useCurrentUser();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     title: "",

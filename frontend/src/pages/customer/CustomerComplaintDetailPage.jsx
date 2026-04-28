@@ -1,18 +1,10 @@
 import { Link, useParams } from "react-router-dom";
 import ComplaintStatusBadge from "../../components/complaint/ComplaintStatusBadge.jsx";
+import { useCurrentUser } from "../../hooks/useCurrentUser.js";
 import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
 import { findComplaintBySlug } from "../../mocks/complaintsMock.js";
 import { ROUTE_PATHS } from "../../routes/routePaths.js";
-
-const avatarUrl =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuCILdE8Jy3Lovzgf3qbggg6eMbkGXFMM0_IlYPeo47SssEUV8gxncDTDjX9AtQFqHLTwCmIZQ0hK6va9wvaiQM9lXBXTf63pZbGLzVDLMrt-4rO-cy-N-Nd9E80RfKk0uB0rkRsKHr52jdXzUnjEFj0CCykfJxZqtiin5iSCKPj6DfclgYRJGcvXQUwH4EmHkQ-e1ltK7_wJwrJ4LF4vMAOW4vxt6x7ZhunDPDJ1pdciokKBkOX2emCM48Z0eOTTzKFf9ra6mRlRBc7";
-
-const user = {
-  firstName: "Alex",
-  name: window.localStorage.getItem("demoName") || "Alex Johnson",
-  avatarUrl,
-};
 
 const statusClasses = {
   complete: "bg-green-600",
@@ -48,6 +40,7 @@ const formatFileSize = (size) => {
 const getEvidenceName = (file) => (typeof file === "string" ? file : file.name);
 
 export default function CustomerComplaintDetailPage() {
+  const user = useCurrentUser();
   const { complaintId } = useParams();
   const complaint = findComplaintBySlug(complaintId || "");
 
