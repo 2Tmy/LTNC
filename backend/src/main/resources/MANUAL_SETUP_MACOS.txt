@@ -1,0 +1,177 @@
+# ================================================
+# MANUAL POSTGRESQL SETUP FOR macOS
+# ================================================
+
+# ==================== STEP 1: FIND POSTGRESQL ====================
+
+# Option 1: If you installed via Homebrew
+which psql
+# If not found, try:
+/opt/homebrew/bin/psql --version
+/usr/local/bin/psql --version
+
+# Option 2: If you installed Postgres.app
+/Applications/Postgres.app/Contents/Versions/16/bin/psql --version
+
+# ==================== STEP 2: SET PSQL PATH ====================
+
+# Choose ONE based on where you found psql above:
+
+# For Homebrew (Intel Mac):
+export PATH="/usr/local/bin:$PATH"
+
+# For Homebrew (Apple Silicon M1/M2):
+export PATH="/opt/homebrew/bin:$PATH"
+
+# For Postgres.app:
+export PATH="/Applications/Postgres.app/Contents/Versions/16/bin:$PATH"
+
+# Verify:
+which psql
+psql --version
+
+# ==================== STEP 3: CREATE DATABASE ====================
+
+# Replace 'postgres' with your PostgreSQL username if different
+psql -U postgres -c "DROP DATABASE IF EXISTS db;"
+psql -U postgres -c "CREATE DATABASE db;"
+
+# ==================== STEP 4: RUN SCHEMA ====================
+
+psql -U postgres -d db -f schema.sql
+
+# ==================== STEP 5: RUN SEED DATA ====================
+
+psql -U postgres -d db -f data.sql
+
+# ==================== STEP 6: TEST QUERIES ====================
+
+# Test 1: View all users
+psql -U postgres -d db -c "SELECT id, name, email, role FROM users ORDER BY id;"
+
+# Expected output:
+#  id |      name       |         email         |    role     
+# ----+-----------------+-----------------------+-------------
+#   1 | Nguyen Van An   | customer@test.com     | CUSTOMER
+#   2 | Pham Thi Huong  | staff@test.com        | CS_STAFF
+#   3 | Nguyen Thi Lan  | specialist@test.com   | SPECIALIST
+#   4 | Le Thi Mai      | manager@test.com      | MANAGEMENT
+
+# Test 2: Find CUSTOMER users
+psql -U postgres -d db -c "SELECT id, name, email FROM users WHERE role = 'CUSTOMER';"
+
+# Expected output:
+#  id |     name      |       email       
+# ----+---------------+-------------------
+#   1 | Nguyen Van An | customer@test.com
+
+# Test 3: View complaint with customer info
+psql -U postgres -d db -c "
+SELECT 
+    c.id,
+    c.title,
+    c.status,
+    u.name as customer_name
+FROM complaints c
+JOIN users u ON c.customer_id = u.id;
+"
+
+# Expected output:
+#  id |               title               |  status   |  customer_name  
+# ----+-----------------------------------+-----------+-----------------
+#   1 | San pham bi loi sau 2 ngay su dung| VALIDATED | Nguyen Van An
+
+# Test 4: View validation details
+psql -U postgres -d db -c "
+SELECT 
+    cv.id,
+    cv.complaint_id,
+    cv.validation_status,
+    cv.is_information_complete,
+    cv.is_within_scope,
+    u.name as validated_by
+FROM complaint_validations cv
+JOIN users u ON cv.validated_by = u.id;
+"
+
+# Expected output:
+#  id | complaint_id | validation_status | is_information_complete | is_within_scope |  validated_by   
+# ----+--------------+-------------------+-------------------------+-----------------+-----------------
+#   1 |            1 | VALID             | t                       | t               | Pham Thi Huong
+
+# ==================== STEP 7: INTERACTIVE TESTING ====================
+
+# Connect to database interactively
+psql -U postgres -d db
+
+# Then you can run queries directly:
+# db=# SELECT * FROM users;
+# db=# SELECT * FROM complaints;
+# db=# \dt  -- List all tables
+# db=# \d users  -- Describe users table
+# db=# \q  -- Quit
+
+# ==================== TROUBLESHOOTING ====================
+
+# If you get "password authentication failed":
+psql -U postgres
+# Then inside psql:
+# ALTER USER postgres PASSWORD '1';
+# \q
+
+# If you get "database does not exist":
+psql -U postgres -c "CREATE DATABASE db;"
+
+# If you get "permission denied":
+# Check your PostgreSQL user has CREATE DATABASE privilege
+psql -U postgres -c "ALTER USER postgres CREATEDB;"
+
+# ==================== PERMANENT PATH SETUP ====================
+
+# Add to your ~/.zshrc (macOS default shell) or ~/.bash_profile
+
+# For Homebrew:
+echo 'export PATH="/opt/homebrew/bin:$PATH"' >> ~/.zshrc
+
+# For Postgres.app:
+echo 'export PATH="/Applications/Postgres.app/Contents/Versions/16/bin:$PATH"' >> ~/.zshrc
+
+# Reload shell:
+source ~/.zshrc
+
+# ==================== VERIFY EVERYTHING ====================
+
+# Check all tables exist:
+psql -U postgres -d db -c "\dt"
+
+# Expected output:
+#                     List of relations
+#  Schema |           Name           | Type  |  Owner   
+# --------+--------------------------+-------+----------
+#  public | complaint_attachments    | table | postgres
+#  public | complaint_comments       | table | postgres
+#  public | complaint_status_history | table | postgres
+#  public | complaint_validations    | table | postgres
+#  public | complaints               | table | postgres
+#  public | notifications            | table | postgres
+#  public | users                    | table | postgres
+
+# Count records:
+psql -U postgres -d db -c "
+SELECT 
+    'users' as table_name, COUNT(*) as count FROM users
+UNION ALL
+SELECT 'complaints', COUNT(*) FROM complaints
+UNION ALL
+SELECT 'validations', COUNT(*) FROM complaint_validations
+UNION ALL
+SELECT 'notifications', COUNT(*) FROM notifications;
+"
+
+# Expected output:
+#   table_name  | count 
+# --------------+-------
+#  users        |     4
+#  complaints   |     1
+#  validations  |     1
+#  notifications|     2

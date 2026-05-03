@@ -1,0 +1,206 @@
+// ================================================
+// DBDIAGRAM.IO - Complaint Management System
+// SCHEMA TỐI ƯU CHO DỰ ÁN SINH VIÊN
+// ================================================
+// Paste at: https://dbdiagram.io/d
+// ================================================
+
+Table users {
+  id bigserial [pk, increment]
+  name varchar(255) [not null]
+  email varchar(255) [unique, not null]
+  password varchar(255) [not null]
+  role varchar(50) [not null, note: 'CUSTOMER, CS_STAFF, SPECIALIST, MANAGEMENT']
+  enabled boolean [default: true]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'User accounts - Login & Registration'
+}
+
+Table complaints {
+  id bigserial [pk, increment]
+  customer_id bigint [not null, ref: > users.id]
+  
+  // Basic info
+  title varchar(500) [not null]
+  description text [not null]
+  category varchar(100) [not null]
+  priority varchar(50) [default: 'MEDIUM']
+  status varchar(50) [default: 'SUBMITTED']
+  
+  // 🌟 EDIT TRACKING (Key feature!)
+  edit_count int [default: 0, note: 'Số lần customer sửa']
+  last_edited_at timestamp [null, note: 'Lần cuối customer sửa']
+  edit_deadline timestamp [null, note: '7 ngày từ khi NEED_MORE_INFO']
+  
+  // Role assignments
+  validated_by bigint [ref: > users.id]
+  assigned_to bigint [ref: > users.id]
+  approved_by bigint [ref: > users.id]
+  
+  // Timestamps
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  submitted_at timestamp [default: `CURRENT_TIMESTAMP`]
+  validated_at timestamp [null]
+  assigned_at timestamp [null]
+  resolved_at timestamp [null]
+  
+  Note: 'Main complaint entity'
+  
+  Indexes {
+    customer_id
+    status
+    (edit_deadline) [note: 'WHERE status = NEED_MORE_INFO']
+  }
+}
+
+Table complaint_validations {
+  id bigserial [pk, increment]
+  complaint_id bigint [unique, not null, ref: - complaints.id]
+  validated_by bigint [not null, ref: > users.id]
+  
+  validation_status varchar(50) [not null, note: 'VALID, INVALID, NEED_MORE_INFO']
+  is_information_complete boolean [not null, default: false]
+  is_within_scope boolean [not null, default: false]
+  
+  rejection_reason text [null]
+  missing_information text [null, note: '🌟 CS_STAFF ghi: "Vui lòng cung cấp X, Y, Z"']
+  validation_notes text [null]
+  
+  validated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'Validation results - Function 2'
+}
+
+Table complaint_attachments {
+  id bigserial [pk, increment]
+  complaint_id bigint [not null, ref: > complaints.id]
+  uploaded_by bigint [not null, ref: > users.id]
+  
+  file_name varchar(500) [not null]
+  file_type varchar(100) [not null]
+  file_size bigint [not null]
+  file_path varchar(1000) [not null]
+  
+  is_evidence boolean [default: true]
+  is_initial_upload boolean [default: false, note: '🌟 true=upload lúc tạo, false=upload sau']
+  
+  uploaded_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'File uploads - Evidence tracking'
+}
+
+Table complaint_comments {
+  id bigserial [pk, increment]
+  complaint_id bigint [not null, ref: > complaints.id]
+  user_id bigint [not null, ref: > users.id]
+  
+  comment_text text [not null]
+  is_internal boolean [default: false]
+  
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'Comments & Notes'
+}
+
+Table complaint_histories {
+  id bigserial [pk, increment]
+  complaint_id bigint [not null, ref: > complaints.id]
+  changed_by bigint [not null, ref: > users.id]
+  
+  action_type varchar(50) [not null, note: 'STATUS_CHANGED, INFO_UPDATED, FILE_UPLOADED, FILE_DELETED']
+  
+  // Status fields (only for STATUS_CHANGED)
+  old_status varchar(50) [null]
+  new_status varchar(50) [null]
+  
+  // Info fields (only for INFO_UPDATED)
+  old_title varchar(500) [null]
+  new_title varchar(500) [null]
+  old_description text [null]
+  new_description text [null]
+  
+  // File fields (only for FILE_UPLOADED/DELETED)
+  file_name varchar(500) [null, note: '🌟 Simple: Chỉ lưu tên file']
+  file_size bigint [null]
+  
+  reason text [null]
+  changed_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Note: '🌟 UNIFIED HISTORY - 1 bảng track tất cả'
+  
+  Indexes {
+    complaint_id
+    action_type
+    (complaint_id, changed_at) [name: 'idx_timeline']
+  }
+}
+
+Table notifications {
+  id bigserial [pk, increment]
+  user_id bigint [not null, ref: > users.id]
+  complaint_id bigint [ref: > complaints.id]
+  
+  title varchar(500) [not null]
+  message text [not null]
+  type varchar(50) [not null]
+  
+  action_url varchar(500) [null, note: '🌟 Frontend redirect URL']
+  
+  is_read boolean [default: false]
+  read_at timestamp [null]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'Push notifications'
+  
+  Indexes {
+    user_id
+    (user_id, is_read) [name: 'idx_unread']
+  }
+}
+
+// ==================== WORKFLOW ====================
+//
+// FUNCTION 1: Create Complaint
+// Customer → complaints (SUBMITTED)
+//
+// FUNCTION 2: Validation
+// CS_STAFF → complaint_validations (VALID/INVALID/NEED_MORE_INFO)
+//           → complaints.status = VALIDATED/REJECTED/NEED_MORE_INFO
+//           → IF NEED_MORE_INFO: complaints.edit_deadline = NOW() + 7 days
+//
+// FUNCTION 3: Customer Edit (when NEED_MORE_INFO)
+// Customer → Update complaints.description
+//           → complaints.edit_count += 1
+//           → complaints.last_edited_at = NOW()
+//           → complaint_histories (INFO_UPDATED)
+//           → Upload new files → complaint_attachments (is_initial_upload=false)
+//           → complaint_histories (FILE_UPLOADED)
+//
+// ==================== KEY OPTIMIZATIONS ====================
+//
+// ✅ edit_count: Đếm trực tiếp trong complaints table (không cần COUNT query)
+// ✅ last_edited_at: Check timeout dễ dàng
+// ✅ edit_deadline: Alert customer "Còn X ngày"
+// ✅ is_initial_upload: Phân biệt file ban đầu vs file bổ sung
+// ✅ action_url: Frontend redirect ngay khi click notification
+// ✅ Unified histories: 1 bảng duy nhất, query đơn giản
+//
+// ==================== QUERIES EXAMPLES ====================
+//
+// -- Get complaints cần customer sửa (gần hết deadline)
+// SELECT * FROM complaints 
+// WHERE status = 'NEED_MORE_INFO' 
+//   AND edit_deadline < NOW() + INTERVAL '2 days'
+//   AND edit_deadline > NOW();
+//
+// -- Get timeline của 1 complaint (tất cả actions)
+// SELECT * FROM complaint_histories 
+// WHERE complaint_id = 1 
+// ORDER BY changed_at;
+//
+// -- Count số lần customer sửa
+// SELECT edit_count FROM complaints WHERE id = 1;
+// (Không cần COUNT query!)
