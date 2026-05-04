@@ -14,7 +14,9 @@ import StaffDashboardPage from "../pages/staff/dashboard/StaffDashboardPage.jsx"
 import TrackingDashboardPage from "../pages/staff/dashboard/TrackingDashboardPage.jsx";
 import ManagerDashboardPage from "../pages/staff/manager/ManagerDashboardPage.jsx";
 import PendingApprovalsPage from "../pages/staff/manager/PendingApprovalsPage.jsx";
+import AdminComplaintDetailPage from "../pages/staff/customer-service/AdminComplaintDetailPage.jsx";
 import { ProtectedRoute, RoleRedirect } from "./protectedRoutes.jsx";
+
 import { ROUTE_PATHS, USER_ROLES } from "./routePaths.js";
 
 export default function AppRouter() {
@@ -35,7 +37,8 @@ export default function AppRouter() {
 
         <Route element={<ProtectedRoute allowedRoles={[USER_ROLES.admin]} />}>
           <Route path={ROUTE_PATHS.adminDashboard} element={<StaffDashboardPage />} />
-          <Route path={ROUTE_PATHS.adminComplaints} element={<ReceiveComplaintsPage />} />
+          <Route path={ROUTE_PATHS.adminComplaints} element={<ReceiveComplaintsPage />} />  
+          <Route path={ROUTE_PATHS.adminComplaintDetail} element={<AdminComplaintDetailPage />} />  
           <Route path={ROUTE_PATHS.adminComplaintStatus} element={<TrackingDashboardPage />} />
           <Route path={ROUTE_PATHS.adminStaff} element={<AssignComplaintPage />} />
           <Route path={ROUTE_PATHS.adminUsers} element={<ManagerDashboardPage />} />

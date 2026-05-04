@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useCurrentUser } from "../../hooks/useCurrentUser.js";
-import Sidebar from "../../layouts/Sidebar.jsx";
-import TopBar from "../../layouts/TopBar.jsx";
-import { ROUTE_PATHS } from "../../routes/routePaths.js";
-import { getComplaintByCode } from "../../services/complaintService.js";
+import { useCurrentUser } from "../../../hooks/useCurrentUser.js";
+import AdminSidebar from "../../../layouts/AdminSidebar.jsx";
+import AdminTopBar from "../../../layouts/AdminTopBar.jsx";
+import { getComplaintByCode } from "../../../services/complaintService.js";
+import { ROUTE_PATHS } from "../../../routes/routePaths.js";
 
 const statusStyles = {
   Pending: "bg-orange-50 text-orange-700",
@@ -21,7 +21,7 @@ const getStatusIndex = (status) => {
   return index === -1 ? 0 : index;
 };
 
-export default function CustomerComplaintDetailPage() {
+export default function AdminComplaintDetailPage() {
   const user = useCurrentUser();
   const { complaintId: complaintCode } = useParams();
 
@@ -56,9 +56,9 @@ export default function CustomerComplaintDetailPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen bg-background text-on-background">
-        <Sidebar user={user} />
+        <AdminSidebar user={user} />
         <main className="min-w-0 flex-1 bg-surface">
-          <TopBar user={user} />
+          <AdminTopBar user={user} />
 
           <div className="mx-auto flex min-h-[60vh] max-w-5xl items-center justify-center p-lg">
             <div className="rounded-[0.75rem] border border-outline-variant bg-white px-lg py-xl text-center shadow-sm">
@@ -79,9 +79,9 @@ export default function CustomerComplaintDetailPage() {
   if (!complaint) {
     return (
       <div className="flex min-h-screen bg-background text-on-background">
-        <Sidebar user={user} />
+        <AdminSidebar user={user} />
         <main className="min-w-0 flex-1 bg-surface">
-          <TopBar user={user} />
+          <AdminTopBar user={user} />
 
           <div className="mx-auto flex min-h-[60vh] max-w-5xl items-center justify-center p-lg">
             <div className="w-full rounded-[0.75rem] border border-outline-variant bg-white p-xl text-center shadow-sm">
@@ -93,7 +93,7 @@ export default function CustomerComplaintDetailPage() {
 
               <Link
                 className="mt-lg inline-flex items-center justify-center gap-xs rounded-[0.5rem] bg-primary px-lg py-sm text-button text-on-primary shadow-sm transition hover:bg-primary-container"
-                to={ROUTE_PATHS.customerDashboard}
+                to={ROUTE_PATHS.adminDashboard}
               >
                 <span className="material-symbols-outlined text-[20px]">arrow_back</span>
                 Back to dashboard
@@ -132,17 +132,17 @@ export default function CustomerComplaintDetailPage() {
 
   return (
     <div className="flex min-h-screen bg-background text-on-background">
-      <Sidebar user={user} />
+      <AdminSidebar user={user} />
 
       <main className="min-w-0 flex-1 bg-surface">
-        <TopBar user={user} />
+        <AdminTopBar user={user} />
 
         <div className="mx-auto w-full max-w-6xl space-y-lg p-lg">
           <div className="flex flex-wrap items-center justify-between gap-md">
             <div>
               <Link
                 className="mb-xs inline-flex items-center gap-xs text-button text-primary hover:underline"
-                to={ROUTE_PATHS.customerDashboard}
+                to={ROUTE_PATHS.adminDashboard}
               >
                 <span className="material-symbols-outlined text-[20px]">arrow_back</span>
                 Back to dashboard

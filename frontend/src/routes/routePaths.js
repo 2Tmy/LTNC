@@ -10,6 +10,7 @@ export const ROUTE_PATHS = {
   adminDashboard: "/admin/dashboard",
   adminComplaints: "/admin/complaints",
   adminComplaintStatus: "/admin/complaint-status",
+  adminComplaintDetail: "/admin/complaints/:complaintId",
   adminStaff: "/admin/staff",
   adminUsers: "/admin/users",
   adminSettings: "/admin/settings",
