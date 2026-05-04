@@ -1,6 +1,6 @@
 export default function AccountInfoCard({ user }) {
   const items = [
-    { label: "Account role", value: "Customer", icon: "verified_user" },
+    { label: "Account role", value: user.role || "Not available", icon: "verified_user" },
     { label: "Email", value: user.email, icon: "mail" },
     { label: "Member since", value: user.memberSince, icon: "calendar_month" },
     { label: "Open complaints", value: user.openComplaints, icon: "assignment" },

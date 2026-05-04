@@ -1,13 +1,42 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useCurrentUser } from "../../../hooks/useCurrentUser.js";
 import AdminSidebar from "../../../layouts/AdminSidebar.jsx";
 import AdminTopBar from "../../../layouts/AdminTopBar.jsx";
-import { adminComplaints, adminUser, staffMembers } from "../../../mocks/adminMock.js";
+import { getAllComplaints } from "../../../services/complaintService.js";
+
+const staffMembers = [
+  { name: "CS staff queue", role: "Customer Service", workload: 0, status: "Available", email: "staff-queue@local" },
+  { name: "Specialist queue", role: "Specialist", workload: 0, status: "Available", email: "specialist-queue@local" },
+  { name: "Management queue", role: "Management", workload: 0, status: "Available", email: "management-queue@local" },
+];
 
 export default function AssignComplaintPage() {
-  const [unassignedComplaints, setUnassignedComplaints] = useState(() =>
-    adminComplaints.filter((complaint) => complaint.status !== "Resolved")
-  );
+  const user = useCurrentUser();
+  const [unassignedComplaints, setUnassignedComplaints] = useState([]);
   const [assignedMessage, setAssignedMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    const loadComplaints = async () => {
+      setLoading(true);
+      setLoadError("");
+
+      try {
+        const data = await getAllComplaints();
+        setUnassignedComplaints(
+          data.filter((complaint) => !["Resolved", "Rejected"].includes(complaint.status))
+        );
+      } catch (error) {
+        console.error("Load assign complaints error:", error);
+        setLoadError(error.response?.data?.message || "Unable to load backend complaints.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadComplaints();
+  }, []);
 
   const handleAssign = (complaint) => {
     setUnassignedComplaints((current) => current.filter((item) => item.id !== complaint.id));
@@ -19,7 +48,7 @@ export default function AssignComplaintPage() {
       <AdminSidebar />
 
       <main className="min-w-0 flex-1">
-        <AdminTopBar user={adminUser} />
+        <AdminTopBar user={user} />
 
         <div className="mx-auto max-w-[1180px] space-y-lg p-xl">
           <div>
@@ -30,6 +59,9 @@ export default function AssignComplaintPage() {
           <section className="grid grid-cols-1 gap-gutter lg:grid-cols-[1fr_1fr]">
             <div className="rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm">
               <h2 className="text-h2 text-on-surface">Team capacity</h2>
+              <p className="mt-xs text-body-sm text-secondary">
+                Backend staff-list and assignment endpoints are not available yet, so these are local routing queues.
+              </p>
               <div className="mt-md space-y-md">
                 {staffMembers.map((member) => (
                   <article key={member.email} className="rounded-[0.5rem] border border-outline-variant p-md">
@@ -72,7 +104,15 @@ export default function AssignComplaintPage() {
               ) : null}
 
               <div className="mt-md space-y-md">
-                {unassignedComplaints.length ? (
+                {loading ? (
+                  <div className="rounded-[0.5rem] bg-slate-50 p-lg text-center text-body-md text-secondary">
+                    Loading backend complaints...
+                  </div>
+                ) : loadError ? (
+                  <div className="rounded-[0.5rem] border border-error/30 bg-red-50 p-md text-body-md text-error">
+                    {loadError}
+                  </div>
+                ) : unassignedComplaints.length ? (
                   unassignedComplaints.map((complaint) => (
                     <article key={complaint.id} className="rounded-[0.5rem] border border-outline-variant p-md">
                       <p className="text-h3 text-primary">{complaint.id}</p>

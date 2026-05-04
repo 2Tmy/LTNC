@@ -1,5 +1,10 @@
+import { Link } from "react-router-dom";
+
 const statusClasses = {
   Pending: "bg-amber-50 text-amber-700",
+  Validating: "bg-blue-50 text-blue-700",
+  "Needs Info": "bg-yellow-50 text-yellow-700",
+  Investigating: "bg-indigo-50 text-indigo-700",
   Resolved: "bg-emerald-50 text-emerald-700",
   "Under Review": "bg-slate-100 text-secondary",
   Escalated: "bg-rose-50 text-rose-700",
@@ -52,7 +57,7 @@ export default function AdminComplaintsTable({ complaints }) {
                 <td className="whitespace-nowrap px-lg py-md">
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-1 text-body-sm font-semibold ${
-                      statusClasses[complaint.status]
+                      statusClasses[complaint.status] || "bg-slate-100 text-secondary"
                     }`}
                   >
                     <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-current" />
@@ -63,9 +68,9 @@ export default function AdminComplaintsTable({ complaints }) {
                 <td className="whitespace-nowrap px-lg py-md text-body-lg text-secondary">{complaint.date}</td>
                 <td className="whitespace-nowrap px-lg py-md text-right">
                   <div className="flex justify-end gap-md text-slate-400">
-                    <button className="hover:text-primary" type="button" aria-label={`View ${complaint.id}`}>
+                    <Link className="hover:text-primary" to={`/admin/complaints/${complaint.slug}`} aria-label={`View ${complaint.id}`}>
                       <span className="material-symbols-outlined text-[22px]">visibility</span>
-                    </button>
+                    </Link>
                     <button className="hover:text-primary" type="button" aria-label={`Edit ${complaint.id}`}>
                       <span className="material-symbols-outlined text-[22px]">edit</span>
                     </button>
@@ -78,7 +83,9 @@ export default function AdminComplaintsTable({ complaints }) {
       </div>
 
       <div className="flex items-center justify-between border-t border-slate-100 px-lg py-md">
-        <p className="text-body-sm text-secondary">Showing 1-4 of 1,248 complaints</p>
+        <p className="text-body-sm text-secondary">
+          Showing {complaints.length} of {complaints.length} backend complaints
+        </p>
         <div className="flex gap-2">
           <button className="rounded-[0.5rem] border border-slate-200 px-4 py-2 text-body-sm text-slate-400" type="button">
             Previous

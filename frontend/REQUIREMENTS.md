@@ -48,7 +48,7 @@ Customer:
 
 ```txt
 Email: my@gmail.com
-Password: 12345678
+Password: password123
 ```
 
 Staff/Admin:

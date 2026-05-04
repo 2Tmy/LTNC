@@ -1,39 +1,45 @@
 package com.company.complaints.dto.response;
 
+import com.company.complaints.enums.Category;
 import com.company.complaints.enums.ComplaintStatus;
+import com.company.complaints.enums.Priority;
 import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @Builder
 public class ComplaintResponse {
 
     private Long id;
-    private String complaintCode;
-
     private String title;
-    private String category;
-    private String priority;
-    private String orderId;
     private String description;
-    private String phone;
-
-    private List<String> evidenceFiles;
-
+    private Category category;
+    private Priority priority;
     private ComplaintStatus status;
-    private String resolution;
+
+    private int editCount;
+    private LocalDateTime lastEditedAt;
+    private LocalDateTime editDeadline;
 
     private Long customerId;
     private String customerName;
     private String customerEmail;
 
-    private Long receivedById;
-    private String receivedByName;
+    private Long validatedById;
+    private String validatedByName;
+
+    private Long assignedToId;
+    private String assignedToName;
+
+    private Long approvedById;
+    private String approvedByName;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private LocalDateTime receivedAt;
+    private LocalDateTime submittedAt;
+    private LocalDateTime validatedAt;
+    private LocalDateTime assignedAt;
+    private LocalDateTime resolvedAt;
 }

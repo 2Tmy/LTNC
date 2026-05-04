@@ -10,11 +10,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
-@Getter
-@Setter
+
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,46 +24,41 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, unique = true)
     private String email;
 
-    /** BCrypt hash — excluded from toString() to prevent credential leakage in logs */
     @ToString.Exclude
-    @Column(nullable = false)
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private Role role;
 
-    @Column(nullable = false, updatable = false)
+    @Builder.Default
+    private boolean enabled = true;
+
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    /**
-     * @Builder.Default ensures the builder uses true when .enabled() is not called.
-     * JPA's no-args constructor also initialises this to true via the field initializer.
-     */
-    @Builder.Default
-    @Column(nullable = false)
-    private boolean enabled = true;
+    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
-    // ── UserDetails contract ──────────────────────────────────────────────────
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 
-    /** Maps our Role enum to Spring Security's GrantedAuthority (prefix ROLE_ is required). */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
-    /** Spring Security uses email as the principal, not name. */
     @Override
     public String getUsername() {
         return email;

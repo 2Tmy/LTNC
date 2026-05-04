@@ -1,10 +1,7 @@
 package com.company.complaints.exception;
 
 import com.company.complaints.dto.response.ApiResponse;
-import com.company.complaints.exception.CustomExceptions.EmailAlreadyExistsException;
-import com.company.complaints.exception.CustomExceptions.InvalidCredentialsException;
-import com.company.complaints.exception.CustomExceptions.UnauthorizedException;
-import com.company.complaints.exception.CustomExceptions.UserNotFoundException;
+import com.company.complaints.exception.CustomExceptions.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,62 +25,51 @@ public class GlobalExceptionHandler {
 
     // ── Domain exceptions ─────────────────────────────────────────────────────
 
-    /** 409 Conflict — tried to register with an email that already has an account */
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ApiResponse<Void>> handleEmailExists(EmailAlreadyExistsException ex) {
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
     }
 
     /**
-     * 401 Unauthorized — wrong email or wrong password.
-     * The message is intentionally generic to prevent user enumeration.
+     * 401 — wrong email or password.
+     * Message is intentionally generic to prevent user enumeration.
      */
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ApiResponse<Void>> handleInvalidCredentials(InvalidCredentialsException ex) {
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error(ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(ex.getMessage()));
     }
 
-    /** 404 Not Found — user looked up by email does not exist */
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleUserNotFound(UserNotFoundException ex) {
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
     }
 
-    /** 403 Forbidden — authenticated but insufficient role */
+    @ExceptionHandler(ComplaintNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleComplaintNotFound(ComplaintNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    /** 409 — attempt to perform an action that is invalid for the current complaint status */
+    @ExceptionHandler(ComplaintStateException.class)
+    public ResponseEntity<ApiResponse<Void>> handleComplaintState(ComplaintStateException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnauthorized(UnauthorizedException ex) {
-        return ResponseEntity
-                .status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error(ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.getMessage()));
     }
 
-    /** 403 Forbidden — @PreAuthorize check failed (wrong role) */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
-        return ResponseEntity
-                .status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error("Forbidden"));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("Forbidden"));
     }
 
     // ── Validation exception ──────────────────────────────────────────────────
 
     /**
-     * 400 Bad Request — @Valid annotation triggered field-level constraint violations.
-     * Returns a map of { fieldName → errorMessage } in the data payload so the
-     * frontend can highlight individual form fields (LoginForm / RegisterForm).
-     *
-     * Example response:
-     * {
-     *   "success": false,
-     *   "message": "Validation failed",
-     *   "data": { "email": "Must be a valid email address", "password": "..." }
-     * }
+     * 400 — @Valid triggered field-level constraint violations.
+     * Returns { fieldName → errorMessage } so the frontend can highlight individual fields.
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidation(
@@ -96,19 +82,16 @@ public class GlobalExceptionHandler {
             fieldErrors.put(field, message);
         });
 
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiResponse<>(false, "Validation failed", fieldErrors));
     }
 
     // ── Catch-all ─────────────────────────────────────────────────────────────
 
-    /** 500 Internal Server Error — unexpected exception; full stack trace logged server-side only */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
         log.error("Unhandled exception: {}", ex.getMessage(), ex);
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("An unexpected error occurred"));
     }
 }

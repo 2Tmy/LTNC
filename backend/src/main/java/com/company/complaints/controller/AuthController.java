@@ -74,6 +74,7 @@ public class AuthController {
                 .name(user.getName())
                 .email(user.getEmail())
                 .role(user.getRole().name())
+                .createdAt(user.getCreatedAt())
                 .build(); // no token — client already has it
 
         return ResponseEntity.ok(ApiResponse.success("User retrieved", data));

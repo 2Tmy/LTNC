@@ -53,15 +53,19 @@ export default function LoginForm() {
 
     try {
       const res = await login(form.email, form.password);
-      const { token, role, name, email } = res.data.data;
+      const { token, role, name, email, createdAt } = res.data.data;
 
       // Map backend role to frontend route role
       const routeRole = role === "CUSTOMER" ? USER_ROLES.customer : USER_ROLES.admin;
 
       localStorage.setItem("token", token);
       localStorage.setItem("demoRole", routeRole);
+      localStorage.setItem("demoBackendRole", role);
       localStorage.setItem("demoEmail", email);
       localStorage.setItem("demoName", name);
+      if (createdAt) {
+        localStorage.setItem("demoCreatedAt", createdAt);
+      }
 
       navigate(routeRole === USER_ROLES.admin ? ROUTE_PATHS.adminDashboard : ROUTE_PATHS.customerDashboard);
     } catch (err) {

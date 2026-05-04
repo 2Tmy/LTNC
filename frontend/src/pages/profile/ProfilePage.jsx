@@ -1,11 +1,24 @@
+import { useEffect, useState } from "react";
 import AccountInfoCard from "../../components/profile/AccountInfoCard.jsx";
 import ProfileForm from "../../components/profile/ProfileForm.jsx";
 import { useCurrentUser } from "../../hooks/useCurrentUser.js";
 import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
+import { getMyComplaints } from "../../services/complaintService.js";
 
 export default function ProfilePage() {
   const baseUser = useCurrentUser();
+  const [openComplaints, setOpenComplaints] = useState("...");
+
+  useEffect(() => {
+    getMyComplaints()
+      .then((complaints) => {
+        setOpenComplaints(
+          complaints.filter((complaint) => !["Resolved", "Rejected"].includes(complaint.status)).length
+        );
+      })
+      .catch(() => setOpenComplaints("N/A"));
+  }, []);
 
   // Merge real user data with any locally saved profile extras (phone, address)
   let savedExtras = {};
@@ -21,8 +34,7 @@ export default function ProfilePage() {
     phone: savedExtras.phone || "",
     address: savedExtras.address || "",
     preferredContact: savedExtras.preferredContact || "Email",
-    memberSince: "2024",
-    openComplaints: 0,
+    openComplaints,
   };
 
   const handleSave = (profile) => {

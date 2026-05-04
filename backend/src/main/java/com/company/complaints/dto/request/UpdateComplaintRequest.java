@@ -1,24 +1,15 @@
 package com.company.complaints.dto.request;
 
-import com.company.complaints.enums.Category;
-import com.company.complaints.enums.Priority;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-public class CreateComplaintRequest {
+public class UpdateComplaintRequest {
 
     @NotBlank(message = "Title is required")
     @Size(max = 500, message = "Title must not exceed 500 characters")
     private String title;
-
-    @NotNull(message = "Category is required")
-    private Category category;
-
-    // Defaults to MEDIUM when omitted
-    private Priority priority = Priority.MEDIUM;
 
     @NotBlank(message = "Description is required")
     @Size(min = 20, message = "Description must be at least 20 characters")

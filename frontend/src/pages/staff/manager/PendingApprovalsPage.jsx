@@ -1,6 +1,6 @@
+import { useCurrentUser } from "../../../hooks/useCurrentUser.js";
 import AdminSidebar from "../../../layouts/AdminSidebar.jsx";
 import AdminTopBar from "../../../layouts/AdminTopBar.jsx";
-import { adminUser } from "../../../mocks/adminMock.js";
 
 const settings = [
   { label: "Auto-assign new complaints", description: "Route new validated complaints to available staff.", enabled: true },
@@ -10,12 +10,14 @@ const settings = [
 ];
 
 export default function PendingApprovalsPage() {
+  const user = useCurrentUser();
+
   return (
     <div className="flex min-h-screen bg-surface text-on-background">
       <AdminSidebar />
 
       <main className="min-w-0 flex-1">
-        <AdminTopBar user={adminUser} />
+        <AdminTopBar user={user} />
 
         <div className="mx-auto max-w-[900px] space-y-lg p-xl">
           <div>

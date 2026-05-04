@@ -71,12 +71,16 @@ export default function RegisterForm() {
 
     try {
       const res = await register(form.fullName, form.email, form.password);
-      const { token, name, email } = res.data.data;
+      const { token, name, email, role, createdAt } = res.data.data;
 
       localStorage.setItem("token", token);
       localStorage.setItem("demoRole", USER_ROLES.customer);
+      localStorage.setItem("demoBackendRole", role || "CUSTOMER");
       localStorage.setItem("demoEmail", email);
       localStorage.setItem("demoName", name);
+      if (createdAt) {
+        localStorage.setItem("demoCreatedAt", createdAt);
+      }
 
       navigate(ROUTE_PATHS.customerDashboard);
     } catch (err) {

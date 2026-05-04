@@ -9,12 +9,16 @@ import { getMyComplaints } from "../../services/complaintService.js";
 const statusStyles = {
   Pending: "bg-orange-50 text-orange-700",
   Validating: "bg-blue-50 text-blue-700",
+  "Needs Info": "bg-yellow-50 text-yellow-700",
   Investigating: "bg-indigo-50 text-indigo-700",
   Resolved: "bg-green-50 text-green-700",
   Rejected: "bg-red-50 text-red-700",
   SUBMITTED: "bg-orange-50 text-orange-700",
-  RECEIVED: "bg-blue-50 text-blue-700",
-  IN_PROGRESS: "bg-indigo-50 text-indigo-700",
+  PENDING_VALIDATION: "bg-blue-50 text-blue-700",
+  VALIDATED: "bg-blue-50 text-blue-700",
+  NEED_MORE_INFO: "bg-yellow-50 text-yellow-700",
+  IN_REVIEW: "bg-indigo-50 text-indigo-700",
+  INVESTIGATING: "bg-indigo-50 text-indigo-700",
   RESOLVED: "bg-green-50 text-green-700",
   CLOSED: "bg-green-50 text-green-700",
   REJECTED: "bg-red-50 text-red-700",
@@ -57,7 +61,16 @@ export default function CustomerDashboardPage() {
     ).length;
 
     const inProgress = complaints.filter((item) =>
-      ["Validating", "Investigating", "RECEIVED", "IN_PROGRESS"].includes(item.status)
+      [
+        "Validating",
+        "Needs Info",
+        "Investigating",
+        "PENDING_VALIDATION",
+        "VALIDATED",
+        "NEED_MORE_INFO",
+        "IN_REVIEW",
+        "INVESTIGATING",
+      ].includes(item.status)
     ).length;
 
     const resolved = complaints.filter((item) =>

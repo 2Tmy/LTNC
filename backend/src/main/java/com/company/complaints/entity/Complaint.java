@@ -1,12 +1,12 @@
 package com.company.complaints.entity;
 
+import com.company.complaints.enums.Category;
 import com.company.complaints.enums.ComplaintStatus;
+import com.company.complaints.enums.Priority;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "complaints")
@@ -21,50 +21,53 @@ public class Complaint {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "complaint_code", nullable = false, unique = true)
-    private String complaintCode;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
     private User customer;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "received_by_id")
-    private User receivedBy;
-
-    @Column(nullable = false)
+    @Column(nullable = false, length = 500)
     private String title;
-
-    @Column(nullable = false)
-    private String category;
-
-    @Column(nullable = false)
-    private String priority;
-
-    @Column(name = "order_id")
-    private String orderId;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
-    private String phone;
-
-    @ElementCollection
-    @CollectionTable(
-            name = "complaint_evidence_files",
-            joinColumns = @JoinColumn(name = "complaint_id")
-    )
-    @Column(name = "file_name")
-    @Builder.Default
-    private List<String> evidenceFiles = new ArrayList<>();
-
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ComplaintStatus status;
+    @Column(nullable = false, length = 100)
+    private Category category;
 
-    @Column(name = "resolution", columnDefinition = "TEXT")
-    private String resolution;
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private Priority priority = Priority.MEDIUM;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private ComplaintStatus status = ComplaintStatus.SUBMITTED;
+
+    // Tracks how many times the customer has edited after a NEED_MORE_INFO request
+    @Builder.Default
+    @Column(name = "edit_count", nullable = false)
+    private int editCount = 0;
+
+    @Column(name = "last_edited_at")
+    private LocalDateTime lastEditedAt;
+
+    // Set to NOW() + 7 days when status transitions to NEED_MORE_INFO
+    @Column(name = "edit_deadline")
+    private LocalDateTime editDeadline;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "validated_by")
+    private User validatedBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to")
+    private User assignedTo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "approved_by")
+    private User approvedBy;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -72,26 +75,28 @@ public class Complaint {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(name = "received_at")
-    private LocalDateTime receivedAt;
+    @Column(name = "submitted_at", nullable = false, updatable = false)
+    private LocalDateTime submittedAt;
+
+    @Column(name = "validated_at")
+    private LocalDateTime validatedAt;
+
+    @Column(name = "assigned_at")
+    private LocalDateTime assignedAt;
+
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
 
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
-        createdAt = now;
-        updatedAt = now;
-
-        if (status == null) {
-            status = ComplaintStatus.SUBMITTED;
-        }
-
-        if (resolution == null) {
-            resolution = "No resolution has been proposed yet.";
-        }
+        this.createdAt   = now;
+        this.updatedAt   = now;
+        this.submittedAt = now;
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

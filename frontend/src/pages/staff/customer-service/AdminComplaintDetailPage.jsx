@@ -3,18 +3,19 @@ import { Link, useParams } from "react-router-dom";
 import { useCurrentUser } from "../../../hooks/useCurrentUser.js";
 import AdminSidebar from "../../../layouts/AdminSidebar.jsx";
 import AdminTopBar from "../../../layouts/AdminTopBar.jsx";
-import { getComplaintByCode } from "../../../services/complaintService.js";
+import { getComplaintById } from "../../../services/complaintService.js";
 import { ROUTE_PATHS } from "../../../routes/routePaths.js";
 
 const statusStyles = {
   Pending: "bg-orange-50 text-orange-700",
   Validating: "bg-blue-50 text-blue-700",
+  "Needs Info": "bg-yellow-50 text-yellow-700",
   Investigating: "bg-indigo-50 text-indigo-700",
   Resolved: "bg-green-50 text-green-700",
   Rejected: "bg-red-50 text-red-700",
 };
 
-const stepOrder = ["Pending", "Validating", "Investigating", "Resolved"];
+const stepOrder = ["Pending", "Validating", "Needs Info", "Investigating", "Resolved"];
 
 const getStatusIndex = (status) => {
   const index = stepOrder.indexOf(status);
@@ -23,7 +24,7 @@ const getStatusIndex = (status) => {
 
 export default function AdminComplaintDetailPage() {
   const user = useCurrentUser();
-  const { complaintId: complaintCode } = useParams();
+  const { complaintId } = useParams();
 
   const [complaint, setComplaint] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +36,7 @@ export default function AdminComplaintDetailPage() {
       setLoadError("");
 
       try {
-        const data = await getComplaintByCode(complaintCode);
+        const data = await getComplaintById(complaintId);
         setComplaint(data);
       } catch (error) {
         setComplaint(null);
@@ -48,10 +49,10 @@ export default function AdminComplaintDetailPage() {
       }
     };
 
-    if (complaintCode) {
+    if (complaintId) {
       fetchComplaint();
     }
-  }, [complaintCode]);
+  }, [complaintId]);
 
   if (loading) {
     return (
@@ -119,6 +120,11 @@ export default function AdminComplaintDetailPage() {
       icon: "fact_check",
     },
     {
+      label: "Needs Info",
+      description: "Customer update requested",
+      icon: "edit_note",
+    },
+    {
       label: "Investigating",
       description: "Complaint is being handled",
       icon: "search",
@@ -168,7 +174,7 @@ export default function AdminComplaintDetailPage() {
           <section className="rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm">
             <h2 className="text-h2 text-on-surface">Complaint Status</h2>
 
-            <div className="mt-lg grid grid-cols-1 gap-md md:grid-cols-4">
+            <div className="mt-lg grid grid-cols-1 gap-md md:grid-cols-5">
               {timelineSteps.map((step, index) => {
                 const isDone = index < activeIndex;
                 const isActive = index === activeIndex;
@@ -218,6 +224,16 @@ export default function AdminComplaintDetailPage() {
 
               <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
                 <div>
+                  <p className="text-label-md uppercase text-on-surface-variant">Backend ID</p>
+                  <p className="mt-xxs text-body-md text-on-surface">{complaint.rawId}</p>
+                </div>
+
+                <div>
+                  <p className="text-label-md uppercase text-on-surface-variant">Raw status</p>
+                  <p className="mt-xxs text-body-md text-on-surface">{complaint.rawStatus}</p>
+                </div>
+
+                <div>
                   <p className="text-label-md uppercase text-on-surface-variant">Category</p>
                   <p className="mt-xxs text-body-md text-on-surface">{complaint.category}</p>
                 </div>
@@ -253,6 +269,16 @@ export default function AdminComplaintDetailPage() {
                   <p className="mt-xxs text-body-md text-on-surface">
                     {complaint.lastUpdated || "Not available"}
                   </p>
+                </div>
+
+                <div>
+                  <p className="text-label-md uppercase text-on-surface-variant">Edit count</p>
+                  <p className="mt-xxs text-body-md text-on-surface">{complaint.editCount}</p>
+                </div>
+
+                <div>
+                  <p className="text-label-md uppercase text-on-surface-variant">Edit deadline</p>
+                  <p className="mt-xxs text-body-md text-on-surface">{complaint.editDeadline}</p>
                 </div>
               </div>
 
@@ -318,6 +344,27 @@ export default function AdminComplaintDetailPage() {
                       No evidence files were uploaded.
                     </p>
                   )}
+                </div>
+              </section>
+
+              <section className="rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm">
+                <h2 className="text-h3 text-on-surface">Workflow owners</h2>
+
+                <div className="mt-md space-y-sm">
+                  <div>
+                    <p className="text-label-md uppercase text-on-surface-variant">Validated by</p>
+                    <p className="mt-xxs text-body-md text-on-surface">{complaint.validatedByName}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-label-md uppercase text-on-surface-variant">Assigned to</p>
+                    <p className="mt-xxs text-body-md text-on-surface">{complaint.assignedToName}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-label-md uppercase text-on-surface-variant">Approved by</p>
+                    <p className="mt-xxs text-body-md text-on-surface">{complaint.approvedByName}</p>
+                  </div>
                 </div>
               </section>
             </aside>

@@ -1,7 +1,13 @@
 # Customer Complaint Management System
 
+![Java 17](https://img.shields.io/badge/Java-17-blue.svg)
+![Spring Boot 3.4](https://img.shields.io/badge/Spring_Boot-3.4.5-brightgreen.svg)
+![React 19](https://img.shields.io/badge/React-19-61dafb.svg)
+![Vite 6](https://img.shields.io/badge/Vite-6-646CFF.svg)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-336791.svg)
+
 A full-stack web application for managing customer complaints.
-Built with **React 19 + Vite** (frontend) and **Spring Boot 3.4 + PostgreSQL** (backend).
+Built with **React 19 + Vite + Tailwind CSS** (frontend) and **Spring Boot 3.4 + PostgreSQL** (backend).
 
 ---
 
@@ -163,6 +169,25 @@ SELECT id, name, email, role FROM users ORDER BY role, id;
 
 ---
 
+### Table: `complaints`
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `BIGINT` | PK, auto-increment | Unique complaint ID |
+| `complaint_code` | `VARCHAR` | NOT NULL, UNIQUE | Auto-generated ID (e.g., RC-YYYYMMDD-XXXX) |
+| `customer_id` | `BIGINT` | FK to users | Submitting customer |
+| `title` | `VARCHAR` | NOT NULL | Brief summary |
+| `category` | `VARCHAR` | | Complaint category |
+| `priority` | `VARCHAR` | | Low, Medium, High |
+| `status` | `VARCHAR` | NOT NULL | `SUBMITTED`, `RECEIVED`, `IN_PROGRESS`, `RESOLVED`, `REJECTED` |
+| `order_id` | `VARCHAR` | | Related order reference |
+| `description` | `TEXT` | | Detailed explanation |
+| `resolution` | `TEXT` | | Final response/resolution |
+| `created_at` | `TIMESTAMP` | NOT NULL | Set automatically |
+| `updated_at` | `TIMESTAMP` | NOT NULL | Set automatically |
+
+---
+
 ## Running the Project
 
 ### Backend
@@ -319,9 +344,8 @@ The frontend has been integrated with the backend APIs for real-time data handli
 
 ### Notes
 
-- Database schema for complaints is currently managed via JPA (`ddl-auto=update`)
-- Final schema may be updated once database integration across team components is completed
-- Current implementation prioritizes functionality and API integration
+- Database schema is fully extracted to `schema.sql` for production readiness.
+- Hibernate's auto-generation should be disabled (`spring.jpa.hibernate.ddl-auto=validate` or `none`).
 
 ---
 

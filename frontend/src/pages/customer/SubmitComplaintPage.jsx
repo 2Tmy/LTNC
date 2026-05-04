@@ -9,8 +9,19 @@ import { createComplaint } from "../../services/complaintService.js";
 const inputClass =
   "w-full rounded-[0.5rem] border border-outline-variant bg-white px-md py-sm text-body-md text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15";
 
-const categories = ["Delivery", "Billing", "Technical", "Product Quality", "Account", "Other"];
-const priorities = ["Low", "Medium", "High", "Urgent"];
+const categories = [
+  { value: "DELIVERY", label: "Delivery" },
+  { value: "BILLING", label: "Billing" },
+  { value: "PRODUCT", label: "Product" },
+  { value: "SERVICE", label: "Service" },
+  { value: "OTHER", label: "Other" },
+];
+const priorities = [
+  { value: "LOW", label: "Low" },
+  { value: "MEDIUM", label: "Medium" },
+  { value: "HIGH", label: "High" },
+  { value: "URGENT", label: "Urgent" },
+];
 
 export default function SubmitComplaintPage() {
   const user = useCurrentUser();
@@ -18,8 +29,8 @@ export default function SubmitComplaintPage() {
 
   const [form, setForm] = useState({
     title: "",
-    category: "Delivery",
-    priority: "Medium",
+    category: "DELIVERY",
+    priority: "MEDIUM",
     orderId: "",
     description: "",
     evidenceFiles: [],
@@ -64,10 +75,6 @@ export default function SubmitComplaintPage() {
       nextErrors.description = "Please provide at least 20 characters.";
     }
 
-    if (!form.phone.trim()) {
-      nextErrors.phone = "Phone number is required.";
-    }
-
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -93,7 +100,7 @@ export default function SubmitComplaintPage() {
 
       const createdComplaint = await createComplaint(payload);
 
-      navigate(`/customer/complaints/${createdComplaint.complaintCode}`);
+      navigate(`/customer/complaints/${createdComplaint.slug}`);
     } catch (error) {
       setSubmitError(
         error.response?.data?.message || "Unable to submit complaint. Please try again."
@@ -161,8 +168,8 @@ export default function SubmitComplaintPage() {
                     onChange={updateField}
                   >
                     {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
+                      <option key={category.value} value={category.value}>
+                        {category.label}
                       </option>
                     ))}
                   </select>
@@ -180,8 +187,8 @@ export default function SubmitComplaintPage() {
                     onChange={updateField}
                   >
                     {priorities.map((priority) => (
-                      <option key={priority} value={priority}>
-                        {priority}
+                      <option key={priority.value} value={priority.value}>
+                        {priority.label}
                       </option>
                     ))}
                   </select>
@@ -216,7 +223,9 @@ export default function SubmitComplaintPage() {
                     onChange={updateField}
                     placeholder="Your phone number"
                   />
-                  {errors.phone ? <p className="text-body-sm text-error">{errors.phone}</p> : null}
+                  <p className="text-body-sm text-on-surface-variant">
+                    Stored locally for the demo; the backend does not expose a phone field yet.
+                  </p>
                 </div>
               </div>
 
