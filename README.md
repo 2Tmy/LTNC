@@ -213,6 +213,118 @@ Stop-Process -Id $p -Force
 
 ---
 
+## Complaint Module — Implementation (Current Progress)
+
+This section describes the complaint management features that have been implemented on top of the existing authentication and security system.
+
+The module focuses on enabling customers to submit complaints and allowing staff to receive and process them.
+
+---
+
+### Backend — Complaint APIs
+
+The following REST endpoints have been implemented:
+
+| Method | Path | Auth required | Role | Description |
+|--------|------|--------------|------|------------|
+| `POST` | `/api/complaints` | Yes | CUSTOMER | Submit a new complaint |
+| `GET` | `/api/complaints/my` | Yes | CUSTOMER | Retrieve current user's complaints |
+| `GET` | `/api/complaints/{complaintCode}` | Yes | ALL ROLES | Get complaint detail |
+| `GET` | `/api/complaints` | Yes | STAFF | Retrieve all complaints |
+| `GET` | `/api/complaints/submitted` | Yes | STAFF | Retrieve submitted (pending) complaints |
+| `PUT` | `/api/complaints/{complaintCode}/receive` | Yes | STAFF | Mark complaint as received |
+
+---
+
+### Complaint Processing Flow
+
+The complaint lifecycle is currently defined as:
+```text
+
+SUBMITTED → RECEIVED → IN_PROGRESS → RESOLVED
+
+To align with frontend display, status values are mapped as follows:
+
+| Backend Status | UI Representation |
+|----------------|------------------|
+| `SUBMITTED` | Pending |
+| `RECEIVED` | Validating |
+| `IN_PROGRESS` | Investigating |
+| `RESOLVED` | Resolved |
+| `REJECTED` | Rejected |
+
+---
+
+### Backend Implementation Notes
+
+- Complaint codes are generated automatically using the format: RC-YYYYMMDD-XXXX
+- Role-based access control is enforced using `@PreAuthorize`.
+
+- Authorization logic includes:
+- Customers can only access their own complaints
+- Staff roles can access all complaints
+
+- The service layer handles:
+- Complaint creation
+- Ownership validation
+- Status transitions (e.g. receive complaint)
+
+---
+
+### Frontend — Complaint Integration
+
+The frontend has been integrated with the backend APIs for real-time data handling.
+
+#### Customer Features
+
+- Submit complaint form  
+`/customer/complaints/new`
+
+- Redirect to complaint detail after submission  
+- View complaint detail page with:
+  - Complaint information
+  - Status timeline
+  - Resolution content
+
+---
+
+#### Staff (Admin) Features
+
+- View submitted complaints  
+`/admin/complaints`
+
+- Receive complaint (status update from `SUBMITTED` → `RECEIVED`)
+
+- View complaint detail (separate admin view)
+
+### Current Implementation Status
+
+#### Completed
+
+- Customer complaint submission flow
+- Complaint detail page (customer and admin)
+- Staff complaint receiving flow
+- Backend API integration with frontend
+- Role-based access validation
+
+---
+
+#### In Progress
+
+- Admin dashboard (currently using mock data)
+- Complaint status tracking dashboard
+- Aggregated metrics (total / pending / resolved complaints)
+
+---
+
+### Notes
+
+- Database schema for complaints is currently managed via JPA (`ddl-auto=update`)
+- Final schema may be updated once database integration across team components is completed
+- Current implementation prioritizes functionality and API integration
+
+---
+
 ## API Reference
 
 Full interactive documentation is available at `http://localhost:8080/swagger-ui.html` after starting the server.
