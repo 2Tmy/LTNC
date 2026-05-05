@@ -69,8 +69,15 @@ public class ComplaintController {
     }
 
     @GetMapping("/code/{code}")
-    public ApiResponse<ComplaintResponse> getByCode(@PathVariable String code) {
-        return ApiResponse.success(complaintService.getByComplaintCode(code));
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'CS_STAFF', 'SPECIALIST', 'MANAGEMENT')")
+    public ApiResponse<ComplaintResponse> getByCode(
+            @PathVariable String code,
+            Authentication authentication
+    ) {
+        return ApiResponse.success(
+                "Complaint retrieved successfully",
+                complaintService.getComplaintByCode(code, authentication)
+        );
     }
 
 
