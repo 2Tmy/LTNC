@@ -68,6 +68,12 @@ public class ComplaintController {
                 complaintService.getComplaintById(id, authentication));
     }
 
+    @GetMapping("/code/{code}")
+    public ApiResponse<ComplaintResponse> getByCode(@PathVariable String code) {
+        return ApiResponse.success(complaintService.getByComplaintCode(code));
+    }
+
+
     /**
      * PUT /api/complaints/{id}/receive — CS_STAFF marks a complaint as received,
      * moving it from SUBMITTED → PENDING_VALIDATION for the validation queue.

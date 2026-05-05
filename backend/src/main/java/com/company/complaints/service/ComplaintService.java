@@ -22,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @Service
 @RequiredArgsConstructor
@@ -36,13 +38,14 @@ public class ComplaintService {
         User customer = getCurrentUser(authentication);
 
         Priority priority = request.getPriority() != null ? request.getPriority() : Priority.MEDIUM;
-
         Complaint complaint = Complaint.builder()
+                .complaintCode(generateComplaintCode())
                 .customer(customer)
                 .title(request.getTitle().trim())
                 .category(request.getCategory())
                 .priority(priority)
                 .description(request.getDescription().trim())
+                .status(ComplaintStatus.SUBMITTED)
                 .build();
 
         log.info("Customer {} submitted complaint", customer.getEmail());
@@ -135,6 +138,13 @@ public class ComplaintService {
                 customer.getEmail(), id, complaint.getEditCount());
         return toResponse(complaintRepository.save(complaint));
     }
+    @Transactional(readOnly = true)
+    public ComplaintResponse getByComplaintCode(String code) {
+        Complaint complaint = complaintRepository.findByComplaintCode(code)
+            .orElseThrow(() -> new ComplaintNotFoundException("Complaint not found: " + code));
+
+        return toResponse(complaint);
+    }
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
@@ -149,6 +159,16 @@ public class ComplaintService {
                         "User not found: " + authentication.getName()));
     }
 
+    private String generateComplaintCode() {
+    String date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+
+    Long nextId = complaintRepository.findTopByOrderByIdDesc()
+            .map(complaint -> complaint.getId() + 1)
+            .orElse(1L);
+
+    return String.format("RC-%s-%04d", date, nextId);
+}
+
     private ComplaintResponse toResponse(Complaint c) {
         User validatedBy = c.getValidatedBy();
         User assignedTo  = c.getAssignedTo();
@@ -156,6 +176,7 @@ public class ComplaintService {
 
         return ComplaintResponse.builder()
                 .id(c.getId())
+                .complaintCode(c.getComplaintCode())
                 .title(c.getTitle())
                 .description(c.getDescription())
                 .category(c.getCategory())

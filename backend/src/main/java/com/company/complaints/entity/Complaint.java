@@ -25,6 +25,9 @@ public class Complaint {
     @JoinColumn(name = "customer_id", nullable = false)
     private User customer;
 
+    @Column(name = "complaint_code", nullable = false, unique = true, length = 50)
+    private String complaintCode;
+
     @Column(nullable = false, length = 500)
     private String title;
 

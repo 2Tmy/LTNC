@@ -21,7 +21,7 @@ export default function StaffDashboardPage() {
   const user = useCurrentUser();
 
   const [complaints, setComplaints] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); 
 
   useEffect(() => {
     const loadComplaints = async () => {

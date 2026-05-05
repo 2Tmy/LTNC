@@ -224,8 +224,17 @@ export default function AdminComplaintDetailPage() {
 
               <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
                 <div>
+                  <p className="text-label-md uppercase text-on-surface-variant">Complaint Code</p>
+                  <p className="mt-xxs text-body-md text-on-surface">
+                    {complaint.id || complaint.complaintCode || complaint.slug}
+                  </p>
+                </div>
+
+                <div>
                   <p className="text-label-md uppercase text-on-surface-variant">Backend ID</p>
-                  <p className="mt-xxs text-body-md text-on-surface">{complaint.rawId}</p>
+                  <p className="mt-xxs text-body-md text-on-surface">
+                    {complaint.rawId || "Not available"}
+                  </p>
                 </div>
 
                 <div>

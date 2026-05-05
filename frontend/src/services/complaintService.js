@@ -173,6 +173,11 @@ export const getComplaintById = async (complaintId) => {
 
 export const getComplaintByCode = getComplaintById;
 
+export const getComplaintByCodeSearch = async (code) => {
+  const response = await apiClient.get(`/api/complaints/code/${code}`);
+  return toComplaintUiModel(response.data.data);
+};
+
 export const getAllComplaints = async () => {
   const response = await apiClient.get("/api/complaints");
   return response.data.data.map(toComplaintUiModel);
