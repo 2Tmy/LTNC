@@ -37,12 +37,14 @@ export default function TrackingDashboardPage() {
     const pending = complaints.filter((item) => item.status === "Pending").length;
     const validating = complaints.filter((item) => item.status === "Validating").length;
     const investigating = complaints.filter((item) => item.status === "Investigating").length;
+    const resolving = complaints.filter((item) => item.status === "Resolving").length;
     const resolved = complaints.filter((item) => item.status === "Resolved").length;
-
+  
     return [
       { label: "Pending", count: pending, color: "bg-amber-500" },
       { label: "Validating", count: validating, color: "bg-blue-500" },
       { label: "Investigating", count: investigating, color: "bg-indigo-500" },
+      { label: "Resolving", count: resolving, color: "bg-purple-500" },
       { label: "Resolved", count: resolved, color: "bg-emerald-500" },
     ];
   }, [complaints]);

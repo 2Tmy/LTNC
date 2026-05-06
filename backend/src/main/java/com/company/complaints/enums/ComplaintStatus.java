@@ -1,13 +1,13 @@
 package com.company.complaints.enums;
 
 public enum ComplaintStatus {
-    SUBMITTED,
-    PENDING_VALIDATION,
-    VALIDATED,
+    SUBMITTED,          // Pending
+    PENDING_VALIDATION, // Validating
+    INVESTIGATING,      // Investigating
+    RESOLVING,          // Resolving
+    RESOLVED,           // Resolved
+
     REJECTED,
     NEED_MORE_INFO,
-    IN_REVIEW,
-    INVESTIGATING,
-    RESOLVED,
     CLOSED
 }
