@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { useCurrentUser } from "../../../hooks/useCurrentUser.js";
 import AdminSidebar from "../../../layouts/AdminSidebar.jsx";
 import AdminTopBar from "../../../layouts/AdminTopBar.jsx";
-import { getSubmittedComplaints, receiveComplaint } from "../../../services/complaintService.js";
+//import { getSubmittedComplaints, receiveComplaint } from "../../../services/complaintService.js";
+import { getSubmittedComplaints } from "../../../services/complaintService.js";
 
 const priorityStyles = {
   Low: "bg-slate-100 text-slate-700",
@@ -18,7 +19,7 @@ export default function ReceiveComplaintsPage() {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [receivingCode, setReceivingCode] = useState("");
+  //const [receivingCode, setReceivingCode] = useState("");
 
   const loadComplaints = async () => {
     setLoading(true);
@@ -41,7 +42,7 @@ export default function ReceiveComplaintsPage() {
   useEffect(() => {
     loadComplaints();
   }, []);
-
+ /*
   const handleReceive = async (complaintCode) => {
     setReceivingCode(complaintCode);
 
@@ -54,7 +55,7 @@ export default function ReceiveComplaintsPage() {
     } finally {
       setReceivingCode("");
     }
-  };
+  }; */ 
 
   return (
     <div className="flex min-h-screen bg-background text-on-background">
@@ -174,17 +175,6 @@ export default function ReceiveComplaintsPage() {
                           View
                         </Link>
 
-                        <button
-                          className="inline-flex items-center justify-center gap-xs rounded-[0.5rem] bg-primary px-sm py-xs text-button text-on-primary shadow-sm transition hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-60"
-                          type="button"
-                          onClick={() => handleReceive(complaint.slug)}
-                          disabled={receivingCode === complaint.slug}
-                        >
-                          <span className="material-symbols-outlined text-[18px]">
-                            {receivingCode === complaint.slug ? "hourglass_top" : "download_done"}
-                          </span>
-                          {receivingCode === complaint.slug ? "Receiving..." : "Receive"}
-                        </button>
                       </div>
                     </div>
                   ))}

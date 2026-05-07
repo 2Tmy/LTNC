@@ -69,7 +69,7 @@ export default function StaffDashboardPage() {
         value: loading ? "..." : String(resolved),
         icon: "check_circle",
         iconClassName: "bg-emerald-50 text-emerald-600",
-        badge: total === 0 ? "0%" : `${Math.round((resolved / total) * 100)}% Rate`,
+        badge: total === 0 ? "0%" : `${Math.round((resolved / total) * 100)}%`,
         badgeClassName: "bg-slate-50 text-secondary",
         to: `${ROUTE_PATHS.adminComplaintStatus}?status=resolved`,
       },

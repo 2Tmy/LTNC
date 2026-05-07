@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useCurrentUser } from "../../../hooks/useCurrentUser.js";
 import AdminSidebar from "../../../layouts/AdminSidebar.jsx";
 import AdminTopBar from "../../../layouts/AdminTopBar.jsx";
-import { getComplaintById } from "../../../services/complaintService.js";
+import { getComplaintByCode } from "../../../services/complaintService.js";
 import { ROUTE_PATHS } from "../../../routes/routePaths.js";
 
 const statusStyles = {
@@ -37,7 +37,7 @@ export default function AdminComplaintDetailPage() {
       setLoadError("");
 
       try {
-        const data = await getComplaintById(complaintId);
+        const data = await getComplaintByCode(complaintId);
         setComplaint(data);
       } catch (error) {
         setComplaint(null);
@@ -225,8 +225,17 @@ export default function AdminComplaintDetailPage() {
 
               <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
                 <div>
+                  <p className="text-label-md uppercase text-on-surface-variant">Complaint Code</p>
+                  <p className="mt-xxs text-body-md text-on-surface">
+                    {complaint.id || complaint.complaintCode || complaint.slug}
+                  </p>
+                </div>
+
+                <div>
                   <p className="text-label-md uppercase text-on-surface-variant">Backend ID</p>
-                  <p className="mt-xxs text-body-md text-on-surface">{complaint.rawId}</p>
+                  <p className="mt-xxs text-body-md text-on-surface">
+                    {complaint.rawId || "Not available"}
+                  </p>
                 </div>
 
                 <div>

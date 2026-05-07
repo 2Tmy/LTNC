@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import com.company.complaints.dto.response.MonthlyComplaintVolumeResponse;
 import java.util.List;
 
 @RestController
@@ -68,10 +69,31 @@ public class ComplaintController {
                 complaintService.getComplaintById(id, authentication));
     }
 
+    @GetMapping("/code/{code}")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'CS_STAFF', 'SPECIALIST', 'MANAGEMENT')")
+    public ApiResponse<ComplaintResponse> getByCode(
+            @PathVariable String code,
+            Authentication authentication
+    ) {
+        return ApiResponse.success(
+                "Complaint retrieved successfully",
+                complaintService.getComplaintByCode(code, authentication)
+        );
+    }
+
+    @GetMapping("/statistics/monthly-volume")
+    @PreAuthorize("hasAnyRole('CS_STAFF', 'SPECIALIST', 'MANAGEMENT')")
+    public ApiResponse<List<MonthlyComplaintVolumeResponse>> getMonthlyComplaintVolume() {
+        return ApiResponse.success(
+            "Monthly complaint volume retrieved successfully",
+            complaintService.getMonthlyComplaintVolume()
+        );}
+
+
     /**
      * PUT /api/complaints/{id}/receive — CS_STAFF marks a complaint as received,
      * moving it from SUBMITTED → PENDING_VALIDATION for the validation queue.
-     */
+     
     @PutMapping("/{id}/receive")
     @PreAuthorize("hasAnyRole('CS_STAFF', 'MANAGEMENT')")
     public ApiResponse<ComplaintResponse> receiveComplaint(
@@ -81,6 +103,7 @@ public class ComplaintController {
         return ApiResponse.success("Complaint submitted for validation",
                 complaintService.submitForValidation(id, authentication));
     }
+    */
 
     /**
      * PUT /api/complaints/{id} — customer updates title/description

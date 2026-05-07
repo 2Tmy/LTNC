@@ -5,6 +5,7 @@ import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
 import { ROUTE_PATHS } from "../../routes/routePaths.js";
 import { getComplaintById } from "../../services/complaintService.js";
+import { getComplaintByCode } from "../../services/complaintService.js";
 
 const statusStyles = {
   Pending: "bg-orange-50 text-orange-700",
@@ -37,7 +38,7 @@ export default function CustomerComplaintDetailPage() {
       setLoadError("");
 
       try {
-        const data = await getComplaintById(complaintId);
+        const data = await getComplaintByCode(complaintId);
         setComplaint(data);
       } catch (error) {
         setComplaint(null);
@@ -225,8 +226,17 @@ export default function CustomerComplaintDetailPage() {
 
               <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
                 <div>
+                  <p className="text-label-md uppercase text-on-surface-variant">Complaint Code</p>
+                  <p className="mt-xxs text-body-md text-on-surface">
+                    {complaint.id || complaint.complaintCode || complaint.slug}
+                  </p>
+                </div>
+
+                <div>
                   <p className="text-label-md uppercase text-on-surface-variant">Backend ID</p>
-                  <p className="mt-xxs text-body-md text-on-surface">{complaint.rawId}</p>
+                  <p className="mt-xxs text-body-md text-on-surface">
+                    {complaint.rawId || "Not available"}
+                  </p>
                 </div>
 
                 <div>

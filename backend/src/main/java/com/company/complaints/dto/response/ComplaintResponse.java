@@ -26,6 +26,7 @@ public class ComplaintResponse {
     private Long customerId;
     private String customerName;
     private String customerEmail;
+    private String complaintCode;
 
     private Long validatedById;
     private String validatedByName;

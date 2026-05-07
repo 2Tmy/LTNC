@@ -22,6 +22,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
+import com.company.complaints.dto.response.MonthlyComplaintVolumeResponse;
+import java.time.Month;
+import java.time.format.TextStyle;
+import java.util.ArrayList;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -36,13 +44,14 @@ public class ComplaintService {
         User customer = getCurrentUser(authentication);
 
         Priority priority = request.getPriority() != null ? request.getPriority() : Priority.MEDIUM;
-
         Complaint complaint = Complaint.builder()
+                .complaintCode(generateComplaintCode())
                 .customer(customer)
                 .title(request.getTitle().trim())
                 .category(request.getCategory())
                 .priority(priority)
                 .description(request.getDescription().trim())
+                .status(ComplaintStatus.SUBMITTED)
                 .build();
 
         log.info("Customer {} submitted complaint", customer.getEmail());
@@ -83,6 +92,61 @@ public class ComplaintService {
         }
 
         return toResponse(complaint);
+    }
+    @Transactional
+    public ComplaintResponse getComplaintByCode(String code, Authentication authentication) {
+        User currentUser = getCurrentUser(authentication);
+
+        Complaint complaint = complaintRepository.findByComplaintCode(code)
+                .orElseThrow(() -> new ComplaintNotFoundException("Complaint not found: " + code));
+
+        boolean isOwner = complaint.getCustomer().getId().equals(currentUser.getId());
+        boolean isStaff = currentUser.getRole() == Role.CS_STAFF
+                || currentUser.getRole() == Role.SPECIALIST
+                || currentUser.getRole() == Role.MANAGEMENT;
+
+        if (!isOwner && !isStaff) {
+            throw new AccessDeniedException("You do not have permission to view this complaint");
+        }
+
+        if (complaint.getStatus() == ComplaintStatus.SUBMITTED
+                && (currentUser.getRole() == Role.CS_STAFF || currentUser.getRole() == Role.MANAGEMENT)) {
+            complaint.setStatus(ComplaintStatus.PENDING_VALIDATION);
+            complaint.setValidatedBy(currentUser);
+            complaint.setValidatedAt(LocalDateTime.now());
+            complaint = complaintRepository.save(complaint);
+
+            log.info("Complaint {} moved to PENDING_VALIDATION by {}",
+                    complaint.getComplaintCode(), currentUser.getEmail());
+        }
+
+        return toResponse(complaint);
+    }
+    @Transactional(readOnly = true)
+    public List<MonthlyComplaintVolumeResponse> getMonthlyComplaintVolume() {
+        List<Complaint> complaints = complaintRepository.findAll();
+
+        LocalDate now = LocalDate.now();
+        LocalDate startMonth = now.minusMonths(5).withDayOfMonth(1);
+
+        List<MonthlyComplaintVolumeResponse> result = new ArrayList<>();
+
+        for (int i = 0; i < 6; i++) {
+            LocalDate monthDate = startMonth.plusMonths(i);
+            int year = monthDate.getYear();
+            Month month = monthDate.getMonth();
+
+            long count = complaints.stream()
+                    .filter(c -> c.getCreatedAt() != null)
+                    .filter(c -> c.getCreatedAt().getYear() == year)
+                    .filter(c -> c.getCreatedAt().getMonth() == month)
+                    .count();
+
+            String label = month.getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
+            result.add(new MonthlyComplaintVolumeResponse(label, count));
+        }
+
+        return result;
     }
 
     /**
@@ -135,6 +199,13 @@ public class ComplaintService {
                 customer.getEmail(), id, complaint.getEditCount());
         return toResponse(complaintRepository.save(complaint));
     }
+    @Transactional(readOnly = true)
+    public ComplaintResponse getByComplaintCode(String code) {
+        Complaint complaint = complaintRepository.findByComplaintCode(code)
+            .orElseThrow(() -> new ComplaintNotFoundException("Complaint not found: " + code));
+
+        return toResponse(complaint);
+    }
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
@@ -149,6 +220,16 @@ public class ComplaintService {
                         "User not found: " + authentication.getName()));
     }
 
+    private String generateComplaintCode() {
+    String date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+
+    Long nextId = complaintRepository.findTopByOrderByIdDesc()
+            .map(complaint -> complaint.getId() + 1)
+            .orElse(1L);
+
+    return String.format("RC-%s-%04d", date, nextId);
+}
+
     private ComplaintResponse toResponse(Complaint c) {
         User validatedBy = c.getValidatedBy();
         User assignedTo  = c.getAssignedTo();
@@ -156,6 +237,7 @@ public class ComplaintService {
 
         return ComplaintResponse.builder()
                 .id(c.getId())
+                .complaintCode(c.getComplaintCode())
                 .title(c.getTitle())
                 .description(c.getDescription())
                 .category(c.getCategory())
