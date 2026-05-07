@@ -45,11 +45,7 @@ export default function TrackingDashboardPage() {
       { label: "Pending", count: pending, color: "bg-amber-500" },
       { label: "Validating", count: validating, color: "bg-blue-500" },
       { label: "Investigating", count: investigating, color: "bg-indigo-500" },
-<<<<<<< HEAD
       { label: "Resolving", count: resolving, color: "bg-cyan-600" },
-=======
-      { label: "Resolving", count: resolving, color: "bg-purple-500" },
->>>>>>> 3e0d1dc1bd53ee4d84df56c8554c8248a80f055e
       { label: "Resolved", count: resolved, color: "bg-emerald-500" },
     ];
   }, [complaints]);

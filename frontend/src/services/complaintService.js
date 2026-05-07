@@ -3,7 +3,6 @@ import apiClient from "./apiClient";
 const statusMap = {
   SUBMITTED: "Pending",
   PENDING_VALIDATION: "Validating",
-<<<<<<< HEAD
   VALIDATED: "Validating",
   NEED_MORE_INFO: "Validating",
   IN_REVIEW: "Investigating",
@@ -74,14 +73,6 @@ const getExtras = (complaintId) => {
     ...getMockExtras(complaintId),
     ...stored,
   };
-=======
-  INVESTIGATING: "Investigating",
-  RESOLVING: "Resolving",
-  RESOLVED: "Resolved",
-  CLOSED: "Resolved",
-  REJECTED: "Rejected",
-  NEED_MORE_INFO: "Needs Info",
->>>>>>> 3e0d1dc1bd53ee4d84df56c8554c8248a80f055e
 };
 
 const formatDate = (value) => {
@@ -106,58 +97,16 @@ const getInitials = (name) => {
     .toUpperCase();
 };
 
-const toComplaintUiModel = (c) => ({
-  id: `#${c.complaintCode}`,
-  rawId: c.id,
-  complaintCode: c.complaintCode,
-  slug: c.complaintCode,
-
-  title: c.title || "",
-  category: c.category || "Not specified",
-  department: c.category || "Customer Service",
-  priority: c.priority || "Medium",
-  status: statusMap[c.status] || c.status,
-  rawStatus: c.status,
-
-  orderId: c.orderId || "Not provided",
-  phone: c.phone || "Not provided",
-  description: c.description || "",
-  resolution: c.resolution || "No resolution has been proposed yet.",
-
-  customer: c.customerName || "Customer",
-  email: c.customerEmail || "Not available",
-  initials: getInitials(c.customerName),
-  avatarClassName: "bg-blue-100 text-blue-700",
-
-  validatedById: c.validatedById,
-  validatedByName: c.validatedByName,
-  validatedAt: formatDate(c.validatedAt),
-
-  assignedToId: c.assignedToId,
-  assignedToName: c.assignedToName,
-  assignedAt: formatDate(c.assignedAt),
-
-  approvedById: c.approvedById,
-  approvedByName: c.approvedByName,
-
-  editCount: c.editCount ?? 0,
-  lastEditedAt: formatDate(c.lastEditedAt),
-  editDeadline: formatDate(c.editDeadline),
-
-  submittedAt: formatDate(c.submittedAt || c.createdAt),
-  date: formatDate(c.submittedAt || c.createdAt),
-  lastUpdated: formatDate(c.updatedAt),
-
-  evidence: (c.evidenceFiles || []).map((name) => ({
-    name,
-    type: "Uploaded file",
-  })),
+const toBackendComplaintPayload = (payload) => ({
+  title: payload.title,
+  category: payload.category,
+  priority: payload.priority,
+  description: payload.description,
 });
 
-<<<<<<< HEAD
 export const toComplaintUiModel = (c) => {
   const extras = getExtras(c.id);
-  const displayCode = `CMP-${String(c.id || "").padStart(4, "0")}`;
+  const displayCode = c.complaintCode || `CMP-${String(c.id || "").padStart(4, "0")}`;
   const status = statusMap[c.status] || c.status || "Pending";
 
   return {
@@ -178,10 +127,10 @@ export const toComplaintUiModel = (c) => {
     isActive: ACTIVE_STATUSES.has(status),
     isClosed: CLOSED_STATUSES.has(status),
 
-    orderId: extras.orderId,
-    phone: extras.phone,
+    orderId: c.orderId || extras.orderId,
+    phone: c.phone || extras.phone,
     description: c.description || "",
-    resolution: extras.resolution,
+    resolution: c.resolution || extras.resolution,
 
     customerId: c.customerId,
     customer: c.customerName || "Customer",
@@ -189,7 +138,7 @@ export const toComplaintUiModel = (c) => {
     initials: getInitials(c.customerName),
     avatarClassName: "bg-blue-100 text-blue-700",
 
-    editCount: c.editCount,
+    editCount: c.editCount ?? 0,
     lastEditedAt: formatDate(c.lastEditedAt),
     editDeadline: formatDate(c.editDeadline),
 
@@ -208,18 +157,27 @@ export const toComplaintUiModel = (c) => {
     assignedAt: formatDate(c.assignedAt),
     resolvedAt: formatDate(c.resolvedAt),
 
-    evidence: (extras.evidenceFiles || []).map((name) => ({
+    evidence: (c.evidenceFiles || extras.evidenceFiles || []).map((name) => ({
       name,
-      type: "Mock/local file",
+      type: c.evidenceFiles ? "Uploaded file" : "Mock/local file",
     })),
   };
 };
 
-=======
->>>>>>> 3e0d1dc1bd53ee4d84df56c8554c8248a80f055e
 export const createComplaint = async (payload) => {
-  const response = await apiClient.post("/api/complaints", payload);
-  return toComplaintUiModel(response.data.data);
+  const response = await apiClient.post("/api/complaints", toBackendComplaintPayload(payload));
+  const created = response.data.data;
+
+  saveExtras(created.id, {
+    orderId: payload.orderId?.trim() || getMockExtras(created.id).orderId,
+    phone: payload.phone?.trim() || getMockExtras(created.id).phone,
+    evidenceFiles: payload.evidenceFiles?.length
+      ? payload.evidenceFiles
+      : getMockExtras(created.id).evidenceFiles,
+    resolution: getMockExtras(created.id).resolution,
+  });
+
+  return toComplaintUiModel(created);
 };
 
 export const getMyComplaints = async () => {
@@ -227,15 +185,12 @@ export const getMyComplaints = async () => {
   return response.data.data.map(toComplaintUiModel);
 };
 
-export const getComplaintById = async (id) => {
-  const response = await apiClient.get(`/api/complaints/${id}`);
-  return response.data.data;
-};
-
-export const getComplaintByCode = async (complaintCode) => {
-  const response = await apiClient.get(`/api/complaints/code/${complaintCode}`);
+export const getComplaintById = async (complaintId) => {
+  const response = await apiClient.get(`/api/complaints/${complaintId}`);
   return toComplaintUiModel(response.data.data);
 };
+
+export const getComplaintByCode = getComplaintById;
 
 export const getAllComplaints = async () => {
   const response = await apiClient.get("/api/complaints");
@@ -247,7 +202,14 @@ export const getSubmittedComplaints = async () => {
   return response.data.data.map(toComplaintUiModel);
 };
 
+export const receiveComplaint = async (complaintId) => {
+  const response = await apiClient.put(`/api/complaints/${complaintId}/receive`);
+  return toComplaintUiModel(response.data.data);
+};
+
 export const getMonthlyComplaintVolume = async () => {
   const response = await apiClient.get("/api/complaints/statistics/monthly-volume");
   return response.data.data;
 };
+
+export const getComplaints = getAllComplaints;
