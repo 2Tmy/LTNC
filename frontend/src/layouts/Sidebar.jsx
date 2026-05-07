@@ -4,7 +4,6 @@ import { clearDemoAuth } from "../utils/demoAuth.js";
 
 const navItems = [
   { label: "Dashboard", icon: "dashboard", to: ROUTE_PATHS.customerDashboard },
-  { label: "My Complaints", icon: "assignment", to: ROUTE_PATHS.customerDashboard },
   { label: "Submit Complaint", icon: "add_circle", to: ROUTE_PATHS.submitComplaint },
   { label: "Notifications", icon: "notifications", to: ROUTE_PATHS.notifications },
   { label: "Profile", icon: "person", to: ROUTE_PATHS.profile },
@@ -20,7 +19,7 @@ export default function Sidebar({ user }) {
   };
 
   return (
-    <aside className="z-40 hidden h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white p-4 shadow-none md:flex">
+    <aside className="sticky top-0 z-40 hidden h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white p-4 shadow-none md:flex">
       <div className="mb-8 px-2">
         <div className="text-lg font-black text-primary-container">ResolutionCenter</div>
         <div className="mt-4 flex items-center space-x-3">

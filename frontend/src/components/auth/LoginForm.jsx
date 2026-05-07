@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { login } from "../../services/authService.js";
-import { ROUTE_PATHS, USER_ROLES } from "../../routes/routePaths.js";
+import { mapBackendRoleToRouteRole, ROUTE_PATHS, USER_ROLES } from "../../routes/routePaths.js";
 
 const fieldBase =
   "w-full rounded-[0.5rem] border border-outline-variant bg-white px-md py-sm text-body-md text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15";
@@ -11,7 +11,6 @@ export default function LoginForm() {
   const [form, setForm] = useState({
     email: "",
     password: "",
-    role: USER_ROLES.customer,
     remember: true,
   });
   const [errors, setErrors] = useState({});
@@ -55,8 +54,7 @@ export default function LoginForm() {
       const res = await login(form.email, form.password);
       const { token, role, name, email, createdAt } = res.data.data;
 
-      // Map backend role to frontend route role
-      const routeRole = role === "CUSTOMER" ? USER_ROLES.customer : USER_ROLES.admin;
+      const routeRole = mapBackendRoleToRouteRole(role);
 
       localStorage.setItem("token", token);
       localStorage.setItem("demoRole", routeRole);
@@ -121,36 +119,6 @@ export default function LoginForm() {
         </div>
         {errors.password ? <p className="text-body-sm text-error">{errors.password}</p> : null}
       </div>
-
-      <fieldset className="space-y-xs">
-        <legend className="text-label-md uppercase text-on-surface-variant">Continue as</legend>
-        <div className="grid grid-cols-2 gap-sm">
-          {[
-            { value: USER_ROLES.customer, label: "Customer", icon: "person" },
-            { value: USER_ROLES.admin, label: "Staff", icon: "admin_panel_settings" },
-          ].map((option) => (
-            <label
-              key={option.value}
-              className={`flex cursor-pointer items-center justify-center gap-xs rounded-[0.5rem] border px-sm py-sm text-button transition ${
-                form.role === option.value
-                  ? "border-primary bg-primary-fixed text-on-primary-fixed-variant"
-                  : "border-outline-variant bg-white text-on-surface-variant hover:border-outline"
-              }`}
-            >
-              <input
-                className="sr-only"
-                type="radio"
-                name="role"
-                value={option.value}
-                checked={form.role === option.value}
-                onChange={updateField}
-              />
-              <span className="material-symbols-outlined text-[20px]">{option.icon}</span>
-              {option.label}
-            </label>
-          ))}
-        </div>
-      </fieldset>
 
       <div className="flex flex-wrap items-center justify-between gap-sm text-body-sm">
         <label className="flex items-center gap-xs text-on-surface-variant">

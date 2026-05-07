@@ -20,7 +20,7 @@ export default function AdminSidebar() {
   };
 
   return (
-    <aside className="hidden h-screen w-[280px] shrink-0 flex-col border-r border-slate-200 bg-white md:flex">
+    <aside className="sticky top-0 hidden h-screen w-[280px] shrink-0 flex-col border-r border-slate-200 bg-white md:flex">
       <div className="px-lg py-lg">
         <h1 className="text-h2 text-on-surface">Resolutio Admin</h1>
         <p className="mt-1 text-body-sm text-secondary">Enterprise Support</p>

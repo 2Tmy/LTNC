@@ -11,11 +11,12 @@ const statusStyles = {
   Validating: "bg-blue-50 text-blue-700",
   "Needs Info": "bg-yellow-50 text-yellow-700",
   Investigating: "bg-indigo-50 text-indigo-700",
+  Resolving: "bg-cyan-50 text-cyan-700",
   Resolved: "bg-green-50 text-green-700",
   Rejected: "bg-red-50 text-red-700",
 };
 
-const stepOrder = ["Pending", "Validating", "Needs Info", "Investigating", "Resolved"];
+const stepOrder = ["Pending", "Validating", "Investigating", "Resolving", "Resolved"];
 
 const getStatusIndex = (status) => {
   const index = stepOrder.indexOf(status);
@@ -110,28 +111,28 @@ export default function AdminComplaintDetailPage() {
 
   const timelineSteps = [
     {
-      label: "Submitted",
-      description: "Complaint submitted successfully",
+      label: "Pending",
+      description: "Customer submitted the complaint",
       icon: "check",
     },
     {
       label: "Validating",
-      description: "Complaint received by support team",
+      description: "Staff viewed and validated the complaint",
       icon: "fact_check",
     },
     {
-      label: "Needs Info",
-      description: "Customer update requested",
-      icon: "edit_note",
-    },
-    {
       label: "Investigating",
-      description: "Complaint is being handled",
+      description: "Specialist received and is handling it",
       icon: "search",
     },
     {
+      label: "Resolving",
+      description: "Specialist reply is waiting for manager review",
+      icon: "rate_review",
+    },
+    {
       label: "Resolved",
-      description: "Final outcome provided",
+      description: "Manager decision returned to customer",
       icon: "task_alt",
     },
   ];
@@ -367,6 +368,7 @@ export default function AdminComplaintDetailPage() {
                   </div>
                 </div>
               </section>
+
             </aside>
           </div>
         </div>

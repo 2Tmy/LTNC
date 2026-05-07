@@ -2,6 +2,7 @@ const statusClasses = {
   Pending: "bg-orange-50 text-orange-700",
   Investigating: "bg-indigo-50 text-indigo-700",
   "In Progress": "bg-indigo-50 text-indigo-700",
+  Resolving: "bg-cyan-50 text-cyan-700",
   Resolved: "bg-green-50 text-green-700",
   Rejected: "bg-rose-50 text-rose-700",
 };

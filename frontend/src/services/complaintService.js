@@ -4,13 +4,28 @@ const statusMap = {
   SUBMITTED: "Pending",
   PENDING_VALIDATION: "Validating",
   VALIDATED: "Validating",
-  NEED_MORE_INFO: "Needs Info",
+  NEED_MORE_INFO: "Validating",
   IN_REVIEW: "Investigating",
   INVESTIGATING: "Investigating",
+  RESOLVING: "Resolving",
+  PENDING_APPROVAL: "Resolving",
+  AWAITING_APPROVAL: "Resolving",
   RESOLVED: "Resolved",
   CLOSED: "Resolved",
   REJECTED: "Rejected",
 };
+
+export const DISPLAY_STATUS = statusMap;
+
+export const ACTIVE_STATUSES = new Set([
+  "Pending",
+  "Validating",
+  "Investigating",
+  "Resolving",
+]);
+
+export const RESOLVED_STATUSES = new Set(["Resolved"]);
+export const CLOSED_STATUSES = new Set(["Resolved", "Rejected"]);
 
 const categoryMap = {
   PRODUCT: "Product",
@@ -49,7 +64,7 @@ const getMockExtras = (complaintId) => ({
   orderId: `MOCK-${String(complaintId || "0000").padStart(4, "0")}`,
   phone: "(555) 010-0000",
   evidenceFiles: ["mock-evidence-summary.pdf"],
-  resolution: "Mock data: no backend resolution field is available yet.",
+  resolution: "",
 });
 
 const getExtras = (complaintId) => {
@@ -92,10 +107,12 @@ const toBackendComplaintPayload = (payload) => ({
 export const toComplaintUiModel = (c) => {
   const extras = getExtras(c.id);
   const displayCode = `CMP-${String(c.id || "").padStart(4, "0")}`;
+  const status = statusMap[c.status] || c.status || "Pending";
 
   return {
     id: `#${displayCode}`,
     rawId: c.id,
+    apiId: c.id,
     complaintCode: displayCode,
     slug: String(c.id),
 
@@ -105,8 +122,10 @@ export const toComplaintUiModel = (c) => {
     department: categoryMap[c.category] || c.category || "Customer Service",
     priority: priorityMap[c.priority] || c.priority || "Medium",
     rawPriority: c.priority,
-    status: statusMap[c.status] || c.status,
+    status,
     rawStatus: c.status,
+    isActive: ACTIVE_STATUSES.has(status),
+    isClosed: CLOSED_STATUSES.has(status),
 
     orderId: extras.orderId,
     phone: extras.phone,

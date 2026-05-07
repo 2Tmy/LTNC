@@ -21,3 +21,19 @@ export const USER_ROLES = {
   customer: "customer",
   admin: "admin",
 };
+
+export const BACKEND_ROLES = {
+  customer: "CUSTOMER",
+  customerService: "CS_STAFF",
+  specialist: "SPECIALIST",
+  management: "MANAGEMENT",
+};
+
+export const STAFF_BACKEND_ROLES = [
+  BACKEND_ROLES.customerService,
+  BACKEND_ROLES.specialist,
+  BACKEND_ROLES.management,
+];
+
+export const mapBackendRoleToRouteRole = (role) =>
+  STAFF_BACKEND_ROLES.includes(role) ? USER_ROLES.admin : USER_ROLES.customer;

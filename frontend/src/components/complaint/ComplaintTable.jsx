@@ -1,11 +1,14 @@
 import { Link } from "react-router-dom";
-import { createComplaintSlug } from "../../mocks/complaintsMock.js";
 
 const statusClasses = {
   Investigating: "bg-indigo-50 text-indigo-700",
   Pending: "bg-orange-50 text-orange-700",
   Resolved: "bg-green-50 text-green-700",
   "In Progress": "bg-indigo-50 text-indigo-700",
+  Resolving: "bg-cyan-50 text-cyan-700",
+  Validating: "bg-blue-50 text-blue-700",
+  "Needs Info": "bg-yellow-50 text-yellow-700",
+  Rejected: "bg-red-50 text-red-700",
 };
 
 export default function ComplaintTable({ complaints }) {
@@ -42,7 +45,7 @@ export default function ComplaintTable({ complaints }) {
                 <td className="whitespace-nowrap px-lg py-md">
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                      statusClasses[complaint.status]
+                      statusClasses[complaint.status] || "bg-slate-100 text-slate-700"
                     }`}
                   >
                     {complaint.status}
@@ -52,7 +55,7 @@ export default function ComplaintTable({ complaints }) {
                 <td className="whitespace-nowrap px-lg py-md text-right">
                   <Link
                     className="text-button text-primary-container hover:underline"
-                    to={`/customer/complaints/${createComplaintSlug(complaint.id)}`}
+                    to={`/customer/complaints/${complaint.slug}`}
                   >
                     View
                   </Link>

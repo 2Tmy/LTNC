@@ -8,6 +8,7 @@ const statusClasses = {
   Pending: "bg-amber-50 text-amber-700",
   Validating: "bg-blue-50 text-blue-700",
   Investigating: "bg-indigo-50 text-indigo-700",
+  Resolving: "bg-cyan-50 text-cyan-700",
   Resolved: "bg-emerald-50 text-emerald-700",
   Rejected: "bg-rose-50 text-rose-700",
 };
@@ -37,12 +38,14 @@ export default function TrackingDashboardPage() {
     const pending = complaints.filter((item) => item.status === "Pending").length;
     const validating = complaints.filter((item) => item.status === "Validating").length;
     const investigating = complaints.filter((item) => item.status === "Investigating").length;
+    const resolving = complaints.filter((item) => item.status === "Resolving").length;
     const resolved = complaints.filter((item) => item.status === "Resolved").length;
 
     return [
       { label: "Pending", count: pending, color: "bg-amber-500" },
       { label: "Validating", count: validating, color: "bg-blue-500" },
       { label: "Investigating", count: investigating, color: "bg-indigo-500" },
+      { label: "Resolving", count: resolving, color: "bg-cyan-600" },
       { label: "Resolved", count: resolved, color: "bg-emerald-500" },
     ];
   }, [complaints]);
@@ -68,7 +71,7 @@ export default function TrackingDashboardPage() {
             <div className="mb-lg flex items-center justify-between">
               <h2 className="text-h2 text-on-surface">Workflow pipeline</h2>
               <span className="text-body-sm text-secondary">
-                {loading ? "Loading..." : `${total} active records`}
+                {loading ? "Loading..." : `${total} workflow records`}
               </span>
             </div>
 
@@ -97,12 +100,12 @@ export default function TrackingDashboardPage() {
 
             {loading ? (
               <p className="mt-md text-body-md text-secondary">Loading complaints...</p>
-            ) : complaints.filter((complaint) => complaint.status !== "Resolved").length === 0 ? (
+            ) : complaints.filter((complaint) => complaint.isActive).length === 0 ? (
               <p className="mt-md text-body-md text-secondary">No active complaints need attention.</p>
             ) : (
               <div className="mt-md grid grid-cols-1 gap-md lg:grid-cols-2">
                 {complaints
-                  .filter((complaint) => complaint.status !== "Resolved")
+                  .filter((complaint) => complaint.isActive)
                   .map((complaint) => (
                     <article key={complaint.slug} className="rounded-[0.5rem] border border-outline-variant p-md">
                       <div className="flex items-start justify-between gap-md">

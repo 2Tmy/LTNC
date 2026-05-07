@@ -13,9 +13,7 @@ export default function ProfilePage() {
   useEffect(() => {
     getMyComplaints()
       .then((complaints) => {
-        setOpenComplaints(
-          complaints.filter((complaint) => !["Resolved", "Rejected"].includes(complaint.status)).length
-        );
+        setOpenComplaints(complaints.filter((complaint) => complaint.isActive).length);
       })
       .catch(() => setOpenComplaints("N/A"));
   }, []);

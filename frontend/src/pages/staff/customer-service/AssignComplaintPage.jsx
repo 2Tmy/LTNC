@@ -25,7 +25,7 @@ export default function AssignComplaintPage() {
       try {
         const data = await getAllComplaints();
         setUnassignedComplaints(
-          data.filter((complaint) => !["Resolved", "Rejected"].includes(complaint.status))
+          data.filter((complaint) => complaint.isActive)
         );
       } catch (error) {
         console.error("Load assign complaints error:", error);

@@ -5,6 +5,7 @@ const statusClasses = {
   Validating: "bg-blue-50 text-blue-700",
   "Needs Info": "bg-yellow-50 text-yellow-700",
   Investigating: "bg-indigo-50 text-indigo-700",
+  Resolving: "bg-cyan-50 text-cyan-700",
   Resolved: "bg-emerald-50 text-emerald-700",
   "Under Review": "bg-slate-100 text-secondary",
   Escalated: "bg-rose-50 text-rose-700",

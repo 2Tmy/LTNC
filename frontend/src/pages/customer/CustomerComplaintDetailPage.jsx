@@ -11,11 +11,12 @@ const statusStyles = {
   Validating: "bg-blue-50 text-blue-700",
   "Needs Info": "bg-yellow-50 text-yellow-700",
   Investigating: "bg-indigo-50 text-indigo-700",
+  Resolving: "bg-cyan-50 text-cyan-700",
   Resolved: "bg-green-50 text-green-700",
   Rejected: "bg-red-50 text-red-700",
 };
 
-const stepOrder = ["Pending", "Validating", "Needs Info", "Investigating", "Resolved"];
+const stepOrder = ["Pending", "Validating", "Investigating", "Resolving", "Resolved"];
 
 const getStatusIndex = (status) => {
   const index = stepOrder.indexOf(status);
@@ -110,28 +111,28 @@ export default function CustomerComplaintDetailPage() {
 
   const timelineSteps = [
     {
-      label: "Submitted",
-      description: "Complaint submitted successfully",
+      label: "Pending",
+      description: "Complaint submitted to the company",
       icon: "check",
     },
     {
       label: "Validating",
-      description: "Complaint received by support team",
+      description: "Staff is validating the complaint",
       icon: "fact_check",
     },
     {
-      label: "Needs Info",
-      description: "Customer update requested",
-      icon: "edit_note",
-    },
-    {
       label: "Investigating",
-      description: "Complaint is being handled",
+      description: "Specialist is handling the complaint",
       icon: "search",
     },
     {
+      label: "Resolving",
+      description: "Specialist reply is waiting for manager review",
+      icon: "rate_review",
+    },
+    {
       label: "Resolved",
-      description: "Final outcome provided",
+      description: "Manager decision sent to customer",
       icon: "task_alt",
     },
   ];
@@ -347,26 +348,6 @@ export default function CustomerComplaintDetailPage() {
                 </div>
               </section>
 
-              <section className="rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm">
-                <h2 className="text-h3 text-on-surface">Workflow owners</h2>
-
-                <div className="mt-md space-y-sm">
-                  <div>
-                    <p className="text-label-md uppercase text-on-surface-variant">Validated by</p>
-                    <p className="mt-xxs text-body-md text-on-surface">{complaint.validatedByName}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-label-md uppercase text-on-surface-variant">Assigned to</p>
-                    <p className="mt-xxs text-body-md text-on-surface">{complaint.assignedToName}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-label-md uppercase text-on-surface-variant">Approved by</p>
-                    <p className="mt-xxs text-body-md text-on-surface">{complaint.approvedByName}</p>
-                  </div>
-                </div>
-              </section>
             </aside>
           </div>
         </div>

@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import AdminComplaintsTable from "../../../components/staff/AdminComplaintsTable.jsx";
 import AdminMetricCard from "../../../components/staff/AdminMetricCard.jsx";
 import ComplaintsBarChart from "../../../components/staff/ComplaintsBarChart.jsx";
+import PipelineStatusChart from "../../../components/staff/PipelineStatusChart.jsx";
 import { useCurrentUser } from "../../../hooks/useCurrentUser.js";
 import AdminSidebar from "../../../layouts/AdminSidebar.jsx";
 import AdminTopBar from "../../../layouts/AdminTopBar.jsx";
 import { ROUTE_PATHS } from "../../../routes/routePaths.js";
-import { getAllComplaints } from "../../../services/complaintService.js";
+import { ACTIVE_STATUSES, getAllComplaints, RESOLVED_STATUSES } from "../../../services/complaintService.js";
 
 const bars = [
   { label: "May", height: 38, opacity: 0.22 },
@@ -40,8 +41,8 @@ export default function StaffDashboardPage() {
 
   const metrics = useMemo(() => {
     const total = complaints.length;
-    const pending = complaints.filter((item) => item.status === "Pending").length;
-    const resolved = complaints.filter((item) => item.status === "Resolved").length;
+    const pending = complaints.filter((item) => ACTIVE_STATUSES.has(item.status)).length;
+    const resolved = complaints.filter((item) => RESOLVED_STATUSES.has(item.status)).length;
     const rejected = complaints.filter((item) => item.status === "Rejected").length;
 
     return [
@@ -98,6 +99,10 @@ export default function StaffDashboardPage() {
             {metrics.map((metric) => (
               <AdminMetricCard key={metric.label} {...metric} />
             ))}
+          </section>
+
+          <section>
+            <PipelineStatusChart />
           </section>
 
           <section>

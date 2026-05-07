@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { register } from "../../services/authService.js";
-import { ROUTE_PATHS, USER_ROLES } from "../../routes/routePaths.js";
+import { BACKEND_ROLES, ROUTE_PATHS, USER_ROLES } from "../../routes/routePaths.js";
 
 const fieldBase =
   "w-full rounded-[0.5rem] border border-outline-variant bg-white px-md py-sm text-body-md text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15";
@@ -75,7 +75,7 @@ export default function RegisterForm() {
 
       localStorage.setItem("token", token);
       localStorage.setItem("demoRole", USER_ROLES.customer);
-      localStorage.setItem("demoBackendRole", role || "CUSTOMER");
+      localStorage.setItem("demoBackendRole", role || BACKEND_ROLES.customer);
       localStorage.setItem("demoEmail", email);
       localStorage.setItem("demoName", name);
       if (createdAt) {

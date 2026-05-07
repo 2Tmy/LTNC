@@ -4,7 +4,7 @@ import { useCurrentUser } from "../../hooks/useCurrentUser.js";
 import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
 import { ROUTE_PATHS } from "../../routes/routePaths.js";
-import { getMyComplaints } from "../../services/complaintService.js";
+import { ACTIVE_STATUSES, getMyComplaints, RESOLVED_STATUSES } from "../../services/complaintService.js";
 
 const statusStyles = {
   Pending: "bg-orange-50 text-orange-700",
@@ -19,6 +19,10 @@ const statusStyles = {
   NEED_MORE_INFO: "bg-yellow-50 text-yellow-700",
   IN_REVIEW: "bg-indigo-50 text-indigo-700",
   INVESTIGATING: "bg-indigo-50 text-indigo-700",
+  Resolving: "bg-cyan-50 text-cyan-700",
+  RESOLVING: "bg-cyan-50 text-cyan-700",
+  PENDING_APPROVAL: "bg-cyan-50 text-cyan-700",
+  AWAITING_APPROVAL: "bg-cyan-50 text-cyan-700",
   RESOLVED: "bg-green-50 text-green-700",
   CLOSED: "bg-green-50 text-green-700",
   REJECTED: "bg-red-50 text-red-700",
@@ -56,26 +60,13 @@ export default function CustomerDashboardPage() {
   const stats = useMemo(() => {
     const total = complaints.length;
 
-    const pending = complaints.filter((item) =>
-      ["Pending", "SUBMITTED"].includes(item.status)
+    const pending = complaints.filter((item) => item.status === "Pending").length;
+
+    const inProgress = complaints.filter(
+      (item) => ACTIVE_STATUSES.has(item.status) && item.status !== "Pending"
     ).length;
 
-    const inProgress = complaints.filter((item) =>
-      [
-        "Validating",
-        "Needs Info",
-        "Investigating",
-        "PENDING_VALIDATION",
-        "VALIDATED",
-        "NEED_MORE_INFO",
-        "IN_REVIEW",
-        "INVESTIGATING",
-      ].includes(item.status)
-    ).length;
-
-    const resolved = complaints.filter((item) =>
-      ["Resolved", "RESOLVED", "CLOSED"].includes(item.status)
-    ).length;
+    const resolved = complaints.filter((item) => RESOLVED_STATUSES.has(item.status)).length;
 
     return { total, pending, inProgress, resolved };
   }, [complaints]);
@@ -182,7 +173,7 @@ export default function CustomerDashboardPage() {
 
                 <div className="divide-y divide-outline-variant">
                   {complaints.map((complaint) => {
-                    const code = complaint.slug || complaint.complaintCode || complaint.id;
+                    const code = complaint.slug;
 
                     return (
                       <div
@@ -191,7 +182,7 @@ export default function CustomerDashboardPage() {
                       >
                         <div>
                           <p className="text-body-sm text-on-surface-variant">
-                            {complaint.id || `#${code}`}
+                            {complaint.id}
                           </p>
                           <p className="mt-xxs font-medium text-on-surface">
                             {complaint.title}
