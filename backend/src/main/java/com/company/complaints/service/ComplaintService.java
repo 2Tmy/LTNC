@@ -77,22 +77,7 @@ public class ComplaintService {
                 .stream().map(this::toResponse).toList();
     }
 
-    @Transactional(readOnly = true)
-    public ComplaintResponse getComplaintById(Long id, Authentication authentication) {
-        User currentUser = getCurrentUser(authentication);
-        Complaint complaint = findById(id);
 
-        boolean isOwner = complaint.getCustomer().getId().equals(currentUser.getId());
-        boolean isStaff = currentUser.getRole() == Role.CS_STAFF
-                || currentUser.getRole() == Role.SPECIALIST
-                || currentUser.getRole() == Role.MANAGEMENT;
-
-        if (!isOwner && !isStaff) {
-            throw new AccessDeniedException("You do not have permission to view this complaint");
-        }
-
-        return toResponse(complaint);
-    }
     @Transactional
     public ComplaintResponse getComplaintByCode(String code, Authentication authentication) {
         User currentUser = getCurrentUser(authentication);

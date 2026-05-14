@@ -58,20 +58,10 @@ public class ComplaintController {
                 complaintService.getSubmittedComplaints());
     }
 
-    /** GET /api/complaints/{id} — detail view; customer can only see their own */
-    @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'CS_STAFF', 'SPECIALIST', 'MANAGEMENT')")
-    public ApiResponse<ComplaintResponse> getComplaintById(
-            @PathVariable Long id,
-            Authentication authentication) {
 
-        return ApiResponse.success("Complaint retrieved",
-                complaintService.getComplaintById(id, authentication));
-    }
-
-    @GetMapping("/code/{code}")
+    @GetMapping("/{code}")
     @PreAuthorize("hasAnyRole('CUSTOMER', 'CS_STAFF', 'SPECIALIST', 'MANAGEMENT')")
-    public ApiResponse<ComplaintResponse> getByCode(
+    public ApiResponse<ComplaintResponse> getComplaintByCode(
             @PathVariable String code,
             Authentication authentication
     ) {

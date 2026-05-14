@@ -113,8 +113,8 @@ export const toComplaintUiModel = (c) => {
     id: `#${displayCode}`,
     rawId: c.id,
     apiId: c.id,
-    complaintCode: displayCode,
-    slug: String(c.id),
+    complaintCode: c.complaintCode,
+    slug: c.complaintCode,
 
     title: c.title || "",
     category: categoryMap[c.category] || c.category || "Not specified",
@@ -190,7 +190,10 @@ export const getComplaintById = async (complaintId) => {
   return toComplaintUiModel(response.data.data);
 };
 
-export const getComplaintByCode = getComplaintById;
+export const getComplaintByCode = async (complaintCode) => {
+  const response = await apiClient.get(`/api/complaints/${complaintCode}`);
+  return toComplaintUiModel(response.data.data);
+};
 
 export const getAllComplaints = async () => {
   const response = await apiClient.get("/api/complaints");

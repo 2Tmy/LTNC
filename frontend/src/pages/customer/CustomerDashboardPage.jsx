@@ -173,7 +173,7 @@ export default function CustomerDashboardPage() {
 
                 <div className="divide-y divide-outline-variant">
                   {complaints.map((complaint) => {
-                    const code = complaint.slug;
+                    const code = complaint.complaintCode;
 
                     return (
                       <div
@@ -211,7 +211,7 @@ export default function CustomerDashboardPage() {
                         <div className="text-left md:text-right">
                           <Link
                             className="inline-flex items-center justify-center gap-xs rounded-[0.5rem] border border-outline-variant px-sm py-xs text-button text-primary transition hover:bg-blue-50"
-                            to={`/customer/complaints/${code}`}
+                            to={`/customer/complaints/${complaint.complaintCode}`}
                           >
                             View
                             <span className="material-symbols-outlined text-[18px]">
