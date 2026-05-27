@@ -2,18 +2,24 @@ export const ROUTE_PATHS = {
   home: "/",
   login: "/login",
   register: "/register",
+
+  // Customer
   customerDashboard: "/customer/dashboard",
   submitComplaint: "/customer/complaints/new",
+  myComplaints: "/customer/complaints",
   complaintDetail: "/customer/complaints/:complaintId",
   notifications: "/customer/notifications",
   profile: "/customer/profile",
+
+  // Admin — dashboard + 4 process steps + user management
   adminDashboard: "/admin/dashboard",
-  adminComplaints: "/admin/complaints",
-  adminComplaintStatus: "/admin/complaint-status",
+  adminReceive: "/admin/tiep-nhan",
+  adminReview: "/admin/xem-xet",
+  adminProcess: "/admin/xu-ly",
+  adminResponse: "/admin/phan-hoi",
   adminComplaintDetail: "/admin/complaints/:complaintId",
-  adminStaff: "/admin/staff",
   adminUsers: "/admin/users",
-  adminSettings: "/admin/settings",
+
   unauthorized: "/unauthorized",
 };
 
@@ -24,15 +30,15 @@ export const USER_ROLES = {
 
 export const BACKEND_ROLES = {
   customer: "CUSTOMER",
-  customerService: "CS_STAFF",
-  specialist: "SPECIALIST",
-  management: "MANAGEMENT",
+  admin: "ADMIN",
 };
 
+// All non-customer backend roles are treated as admin on the frontend
 export const STAFF_BACKEND_ROLES = [
-  BACKEND_ROLES.customerService,
-  BACKEND_ROLES.specialist,
-  BACKEND_ROLES.management,
+  "ADMIN",
+  "CS_STAFF",
+  "SPECIALIST",
+  "MANAGEMENT",
 ];
 
 export const mapBackendRoleToRouteRole = (role) =>

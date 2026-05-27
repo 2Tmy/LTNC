@@ -3,48 +3,33 @@ import { Link, useNavigate } from "react-router-dom";
 import { login } from "../../services/authService.js";
 import { mapBackendRoleToRouteRole, ROUTE_PATHS, USER_ROLES } from "../../routes/routePaths.js";
 
-const fieldBase =
-  "w-full rounded-[0.5rem] border border-outline-variant bg-white px-md py-sm text-body-md text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15";
+const inputBase =
+  "w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 pl-10 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15";
 
 export default function LoginForm() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-    remember: true,
-  });
+  const [form, setForm] = useState({ email: "", password: "", remember: true });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const updateField = (event) => {
-    const { name, type, checked, value } = event.target;
-    setForm((current) => ({
-      ...current,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-    setErrors((current) => ({ ...current, [name]: "" }));
+  const updateField = (e) => {
+    const { name, type, checked, value } = e.target;
+    setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+    setErrors((err) => ({ ...err, [name]: "" }));
   };
 
   const validate = () => {
-    const nextErrors = {};
-
-    if (!form.email.trim()) {
-      nextErrors.email = "Email is required.";
-    } else if (!/^\S+@\S+\.\S+$/.test(form.email)) {
-      nextErrors.email = "Enter a valid email address.";
-    }
-
-    if (!form.password) {
-      nextErrors.password = "Password is required.";
-    }
-
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+    const e = {};
+    if (!form.email.trim()) e.email = "Email is required.";
+    else if (!/^\S+@\S+\.\S+$/.test(form.email)) e.email = "Enter a valid email address.";
+    if (!form.password) e.password = "Password is required.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     if (!validate()) return;
 
     setLoading(true);
@@ -53,7 +38,6 @@ export default function LoginForm() {
     try {
       const res = await login(form.email, form.password);
       const { token, role, name, email, createdAt } = res.data.data;
-
       const routeRole = mapBackendRoleToRouteRole(role);
 
       localStorage.setItem("token", token);
@@ -61,13 +45,11 @@ export default function LoginForm() {
       localStorage.setItem("demoBackendRole", role);
       localStorage.setItem("demoEmail", email);
       localStorage.setItem("demoName", name);
-      if (createdAt) {
-        localStorage.setItem("demoCreatedAt", createdAt);
-      }
+      if (createdAt) localStorage.setItem("demoCreatedAt", createdAt);
 
       navigate(routeRole === USER_ROLES.admin ? ROUTE_PATHS.adminDashboard : ROUTE_PATHS.customerDashboard);
     } catch (err) {
-      const message = err.response?.data?.message || "Something went wrong. Please try again.";
+      const message = err.response?.data?.message || "Invalid credentials. Please try again.";
       setErrors({ form: message });
     } finally {
       setLoading(false);
@@ -75,17 +57,18 @@ export default function LoginForm() {
   };
 
   return (
-    <form className="space-y-lg" onSubmit={handleSubmit} noValidate>
-      <div className="space-y-xs">
-        <label className="text-label-md uppercase text-on-surface-variant" htmlFor="email">
-          Email
+    <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+      {/* Email */}
+      <div>
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="email">
+          Email address
         </label>
         <div className="relative">
-          <span className="material-symbols-outlined pointer-events-none absolute left-sm top-1/2 -translate-y-1/2 text-[20px] text-outline">
+          <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">
             mail
           </span>
           <input
-            className={`${fieldBase} pl-xl`}
+            className={inputBase}
             id="email"
             name="email"
             type="email"
@@ -95,66 +78,91 @@ export default function LoginForm() {
             autoComplete="email"
           />
         </div>
-        {errors.email ? <p className="text-body-sm text-error">{errors.email}</p> : null}
+        {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
       </div>
 
-      <div className="space-y-xs">
-        <label className="text-label-md uppercase text-on-surface-variant" htmlFor="password">
+      {/* Password */}
+      <div>
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="password">
           Password
         </label>
         <div className="relative">
-          <span className="material-symbols-outlined pointer-events-none absolute left-sm top-1/2 -translate-y-1/2 text-[20px] text-outline">
+          <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">
             lock
           </span>
           <input
-            className={`${fieldBase} pl-xl`}
+            className={inputBase}
             id="password"
             name="password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             value={form.password}
             onChange={updateField}
             placeholder="Enter your password"
             autoComplete="current-password"
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+            tabIndex={-1}
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              {showPassword ? "visibility_off" : "visibility"}
+            </span>
+          </button>
         </div>
-        {errors.password ? <p className="text-body-sm text-error">{errors.password}</p> : null}
+        {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-sm text-body-sm">
-        <label className="flex items-center gap-xs text-on-surface-variant">
+      {/* Remember + Forgot */}
+      <div className="flex items-center justify-between">
+        <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-500">
           <input
-            className="h-4 w-4 rounded border-outline-variant text-primary"
             type="checkbox"
             name="remember"
             checked={form.remember}
             onChange={updateField}
+            className="h-4 w-4 rounded border-slate-300 accent-blue-600"
           />
           Remember me
         </label>
-        <a className="font-medium text-primary hover:underline" href="#forgot-password">
+        <a href="#forgot-password" className="text-xs font-semibold text-blue-600 hover:underline">
           Forgot password?
         </a>
       </div>
 
-      {errors.form ? (
-        <div className="rounded-[0.5rem] border border-error-container bg-error-container px-md py-sm text-body-sm text-on-error-container">
-          {errors.form}
+      {/* Form error */}
+      {errors.form && (
+        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
+          <span className="material-symbols-outlined mt-0.5 shrink-0 text-[16px] text-red-500">error</span>
+          <p className="text-xs text-red-700">{errors.form}</p>
         </div>
-      ) : null}
+      )}
 
+      {/* Submit */}
       <button
-        className="flex w-full items-center justify-center gap-xs rounded-[0.5rem] bg-primary px-lg py-sm text-button text-on-primary shadow-sm transition hover:bg-primary-container focus:outline-none focus:ring-2 focus:ring-primary/25 disabled:opacity-60"
         type="submit"
         disabled={loading}
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        <span className="material-symbols-outlined text-[20px]">login</span>
-        {loading ? "Signing in..." : "Sign in"}
+        {loading ? (
+          <>
+            <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+            Signing in...
+          </>
+        ) : (
+          <>
+            <span className="material-symbols-outlined text-[18px]">login</span>
+            Sign in
+          </>
+        )}
       </button>
 
-      <p className="text-center text-body-sm text-on-surface-variant">
-        Need an account?{" "}
-        <Link className="font-semibold text-primary hover:underline" to={ROUTE_PATHS.register}>
-          Create one
+      {/* Register link */}
+      <p className="text-center text-xs text-slate-500">
+        Don&apos;t have an account?{" "}
+        <Link to={ROUTE_PATHS.register} className="font-semibold text-blue-600 hover:underline">
+          Create account
         </Link>
       </p>
     </form>
