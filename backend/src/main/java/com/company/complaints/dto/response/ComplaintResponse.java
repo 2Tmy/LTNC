@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -15,6 +16,14 @@ public class ComplaintResponse {
     private Long id;
     private String title;
     private String description;
+    private String orderId;
+    private String phone;
+    private String resolution;
+    private String investigationSummary;
+    private String rootCause;
+    private String rejectionReason;
+    private List<String> evidenceFiles;
+    private List<ComplaintAttachmentResponse> evidenceAttachments;
     private Category category;
     private Priority priority;
     private ComplaintStatus status;

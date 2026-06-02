@@ -28,6 +28,9 @@ public class User implements UserDetails {
 
     private String email;
 
+    @Column(length = 50)
+    private String phone;
+
     @ToString.Exclude
     private String password;
 

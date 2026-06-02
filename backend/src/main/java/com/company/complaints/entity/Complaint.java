@@ -34,6 +34,21 @@ public class Complaint {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "order_id", length = 100)
+    private String orderId;
+
+    @Column(length = 50)
+    private String phone;
+
+    @Column(columnDefinition = "TEXT")
+    private String resolution;
+
+    @Column(name = "investigation_summary", columnDefinition = "TEXT")
+    private String investigationSummary;
+
+    @Column(name = "root_cause", columnDefinition = "TEXT")
+    private String rootCause;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 100)
     private Category category;

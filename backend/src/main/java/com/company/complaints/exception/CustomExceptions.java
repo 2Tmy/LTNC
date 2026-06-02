@@ -23,6 +23,10 @@ public class CustomExceptions {
         public ComplaintNotFoundException(String message) { super(message); }
     }
 
+    public static class AttachmentNotFoundException extends RuntimeException {
+        public AttachmentNotFoundException(String message) { super(message); }
+    }
+
     /** Thrown when an action is invalid for the complaint's current status. */
     public static class ComplaintStateException extends RuntimeException {
         public ComplaintStateException(String message) { super(message); }

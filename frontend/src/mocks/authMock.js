@@ -4,14 +4,14 @@ export const mockUsers = [
   {
     id: "customer-001",
     name: "Demo Customer",
-    email: "my@gmail.com",
+    email: "alice@test.com",
     password: "12345678",
     role: USER_ROLES.customer,
   },
   {
     id: "admin-001",
     name: "Demo Admin",
-    email: "admin@gmail.com",
+    email: "admin@test.com",
     password: "87654321",
     role: USER_ROLES.admin,
   },

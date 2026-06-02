@@ -1,6 +1,5 @@
 package com.company.complaints.dto.request;
 
-import com.company.complaints.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -24,6 +23,7 @@ public class RegisterRequest {
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
 
-    /** Defaults to CUSTOMER in AuthService when null */
-    private Role role;
+    @Size(max = 50, message = "Phone number must not exceed 50 characters")
+    private String phone;
+
 }

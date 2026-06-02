@@ -73,6 +73,7 @@ public class AuthController {
                 .userId(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
+                .phone(user.getPhone())
                 .role(user.getRole().name())
                 .createdAt(user.getCreatedAt())
                 .build(); // no token — client already has it
@@ -93,9 +94,7 @@ public class AuthController {
                 "email",         user.getEmail(),
                 "role",          role.name(),
                 "isCustomer",    role == Role.CUSTOMER,
-                "isStaff",       role == Role.CS_STAFF,
-                "isSpecialist",  role == Role.SPECIALIST,
-                "isManagement",  role == Role.MANAGEMENT
+                "isAdmin",       role == Role.ADMIN
         );
         return ResponseEntity.ok(ApiResponse.success("Role verified", info));
     }
@@ -107,19 +106,11 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Access granted: CUSTOMER", null));
     }
 
-    /** GET /api/auth/staff-only — accessible to CS_STAFF, SPECIALIST, MANAGEMENT */
-    @GetMapping("/staff-only")
-    @PreAuthorize("hasAnyRole('CS_STAFF','SPECIALIST','MANAGEMENT')")
-    public ResponseEntity<ApiResponse<String>> staffOnly() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = authService.getCurrentUser(email);
-        return ResponseEntity.ok(ApiResponse.success("Access granted: " + user.getRole().name(), null));
+    /** GET /api/auth/admin-only - accessible only to ADMIN role */
+    @GetMapping("/admin-only")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> adminOnly() {
+        return ResponseEntity.ok(ApiResponse.success("Access granted: ADMIN", null));
     }
 
-    /** GET /api/auth/management-only — accessible only to MANAGEMENT role */
-    @GetMapping("/management-only")
-    @PreAuthorize("hasRole('MANAGEMENT')")
-    public ResponseEntity<ApiResponse<Void>> managementOnly() {
-        return ResponseEntity.ok(ApiResponse.success("Access granted: MANAGEMENT", null));
-    }
 }

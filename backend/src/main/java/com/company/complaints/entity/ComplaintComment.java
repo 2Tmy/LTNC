@@ -29,7 +29,7 @@ public class ComplaintComment {
     @Column(name = "comment_text", nullable = false, columnDefinition = "TEXT")
     private String commentText;
 
-    // Internal comments are only visible to staff, not customers
+    // Internal comments are only visible to admins, not customers.
     @Builder.Default
     @Column(name = "is_internal", nullable = false)
     private boolean isInternal = false;

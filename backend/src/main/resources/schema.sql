@@ -1,12 +1,11 @@
--- ============================================================
--- FULL DATABASE SCHEMA — Production Ready
--- Contains all tables for Auth and Complaints modules.
---
--- Execution order on startup:
---   1. This file runs (Spring sql.init) — creates all tables
---   2. data.sql runs — seeds test accounts
--- ============================================================
+-- Development schema. The current application configuration reloads this file
+-- and data.sql on startup, so tables are intentionally recreated.
 
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS complaint_comments CASCADE;
+DROP TABLE IF EXISTS complaint_attachments CASCADE;
+DROP TABLE IF EXISTS complaint_histories CASCADE;
+DROP TABLE IF EXISTS complaint_validations CASCADE;
 DROP TABLE IF EXISTS complaints CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
@@ -14,45 +13,191 @@ CREATE TABLE users (
     id         BIGSERIAL    NOT NULL,
     name       VARCHAR(255) NOT NULL,
     email      VARCHAR(255) NOT NULL,
+    phone      VARCHAR(50),
     password   VARCHAR(255) NOT NULL,
     role       VARCHAR(50)  NOT NULL,
     enabled    BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP    NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT pk_users       PRIMARY KEY (id),
-    CONSTRAINT uk_users_email UNIQUE      (email),
-    CONSTRAINT chk_users_role CHECK (role IN ('CUSTOMER', 'CS_STAFF', 'SPECIALIST', 'MANAGEMENT'))
+    CONSTRAINT pk_users PRIMARY KEY (id),
+    CONSTRAINT uk_users_email UNIQUE (email),
+    CONSTRAINT chk_users_role
+        CHECK (role IN ('CUSTOMER', 'ADMIN'))
 );
 
--- email is the login key — queried on every login and JWT validation
 CREATE INDEX idx_users_email ON users (email);
--- role is filtered frequently (staff vs customer routing)
-CREATE INDEX idx_users_role  ON users (role);
-
--- ============================================================
--- COMPLAINTS MODULE SCHEMA
--- ============================================================
+CREATE INDEX idx_users_role ON users (role);
 
 CREATE TABLE complaints (
     id             BIGSERIAL    NOT NULL,
     complaint_code VARCHAR(50)  NOT NULL,
     customer_id    BIGINT       NOT NULL,
-    title          VARCHAR(255) NOT NULL,
-    category       VARCHAR(100),
-    priority       VARCHAR(50),
-    status         VARCHAR(50)  NOT NULL,
+    title          VARCHAR(500) NOT NULL,
+    description    TEXT         NOT NULL,
     order_id       VARCHAR(100),
-    description    TEXT,
+    phone          VARCHAR(50),
     resolution     TEXT,
+    investigation_summary TEXT,
+    root_cause     TEXT,
+    category       VARCHAR(100) NOT NULL,
+    priority       VARCHAR(50)  NOT NULL DEFAULT 'MEDIUM',
+    status         VARCHAR(50)  NOT NULL DEFAULT 'SUBMITTED',
+    edit_count     INTEGER      NOT NULL DEFAULT 0,
+    last_edited_at TIMESTAMP,
+    edit_deadline  TIMESTAMP,
+    validated_by   BIGINT,
+    assigned_to    BIGINT,
+    approved_by    BIGINT,
     created_at     TIMESTAMP    NOT NULL DEFAULT NOW(),
     updated_at     TIMESTAMP    NOT NULL DEFAULT NOW(),
+    submitted_at   TIMESTAMP    NOT NULL DEFAULT NOW(),
+    validated_at   TIMESTAMP,
+    assigned_at    TIMESTAMP,
+    resolved_at    TIMESTAMP,
 
     CONSTRAINT pk_complaints PRIMARY KEY (id),
     CONSTRAINT uk_complaints_code UNIQUE (complaint_code),
-    CONSTRAINT fk_complaints_customer FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE
+    CONSTRAINT fk_complaints_customer
+        FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_complaints_validated_by
+        FOREIGN KEY (validated_by) REFERENCES users(id),
+    CONSTRAINT fk_complaints_assigned_to
+        FOREIGN KEY (assigned_to) REFERENCES users(id),
+    CONSTRAINT fk_complaints_approved_by
+        FOREIGN KEY (approved_by) REFERENCES users(id),
+    CONSTRAINT chk_complaints_category
+        CHECK (category IN ('PRODUCT', 'SERVICE', 'DELIVERY', 'BILLING', 'OTHER')),
+    CONSTRAINT chk_complaints_priority
+        CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH', 'URGENT')),
+    CONSTRAINT chk_complaints_status
+        CHECK (status IN (
+            'SUBMITTED', 'PENDING_VALIDATION', 'INVESTIGATING', 'RESOLVING',
+            'RESOLVED', 'REJECTED', 'NEED_MORE_INFO', 'CLOSED'
+        ))
 );
 
 CREATE INDEX idx_complaints_customer ON complaints (customer_id);
-CREATE INDEX idx_complaints_status   ON complaints (status);
-CREATE INDEX idx_complaints_code     ON complaints (complaint_code);
+CREATE INDEX idx_complaints_status ON complaints (status);
+CREATE INDEX idx_complaints_code ON complaints (complaint_code);
+
+CREATE TABLE complaint_validations (
+    id                      BIGSERIAL   NOT NULL,
+    complaint_id            BIGINT      NOT NULL,
+    validated_by            BIGINT      NOT NULL,
+    validation_status       VARCHAR(50) NOT NULL,
+    is_information_complete  BOOLEAN     NOT NULL DEFAULT FALSE,
+    is_within_scope          BOOLEAN     NOT NULL DEFAULT FALSE,
+    is_order_reference_valid BOOLEAN     NOT NULL DEFAULT FALSE,
+    is_description_valid     BOOLEAN     NOT NULL DEFAULT FALSE,
+    is_evidence_valid        BOOLEAN     NOT NULL DEFAULT FALSE,
+    rejection_reason        TEXT,
+    missing_information     TEXT,
+    validation_notes        TEXT,
+    validated_at            TIMESTAMP   NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT pk_complaint_validations PRIMARY KEY (id),
+    CONSTRAINT uk_complaint_validations_complaint UNIQUE (complaint_id),
+    CONSTRAINT fk_complaint_validations_complaint
+        FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE,
+    CONSTRAINT fk_complaint_validations_user
+        FOREIGN KEY (validated_by) REFERENCES users(id),
+    CONSTRAINT chk_complaint_validations_status
+        CHECK (validation_status IN ('VALID', 'INVALID', 'NEED_MORE_INFO'))
+);
+
+CREATE TABLE complaint_histories (
+    id              BIGSERIAL   NOT NULL,
+    complaint_id    BIGINT      NOT NULL,
+    changed_by      BIGINT      NOT NULL,
+    action_type     VARCHAR(50) NOT NULL,
+    old_status      VARCHAR(50),
+    new_status      VARCHAR(50),
+    old_title       VARCHAR(500),
+    new_title       VARCHAR(500),
+    old_description TEXT,
+    new_description TEXT,
+    file_name       VARCHAR(500),
+    file_size       BIGINT,
+    reason          TEXT,
+    changed_at      TIMESTAMP   NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT pk_complaint_histories PRIMARY KEY (id),
+    CONSTRAINT fk_complaint_histories_complaint
+        FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE,
+    CONSTRAINT fk_complaint_histories_user
+        FOREIGN KEY (changed_by) REFERENCES users(id),
+    CONSTRAINT chk_complaint_histories_action
+        CHECK (action_type IN ('STATUS_CHANGED', 'INFO_UPDATED', 'FILE_UPLOADED', 'FILE_DELETED'))
+);
+
+CREATE INDEX idx_complaint_histories_complaint
+    ON complaint_histories (complaint_id, changed_at);
+
+CREATE TABLE complaint_attachments (
+    id                BIGSERIAL    NOT NULL,
+    complaint_id      BIGINT       NOT NULL,
+    uploaded_by       BIGINT       NOT NULL,
+    file_name         VARCHAR(500) NOT NULL,
+    file_type         VARCHAR(100) NOT NULL,
+    file_size         BIGINT       NOT NULL,
+    file_path         VARCHAR(1000) NOT NULL,
+    is_evidence       BOOLEAN      NOT NULL DEFAULT TRUE,
+    is_initial_upload BOOLEAN      NOT NULL DEFAULT FALSE,
+    uploaded_at       TIMESTAMP    NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT pk_complaint_attachments PRIMARY KEY (id),
+    CONSTRAINT fk_complaint_attachments_complaint
+        FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE,
+    CONSTRAINT fk_complaint_attachments_user
+        FOREIGN KEY (uploaded_by) REFERENCES users(id)
+);
+
+CREATE INDEX idx_complaint_attachments_complaint
+    ON complaint_attachments (complaint_id, uploaded_at);
+
+CREATE TABLE complaint_comments (
+    id           BIGSERIAL NOT NULL,
+    complaint_id BIGINT    NOT NULL,
+    user_id      BIGINT    NOT NULL,
+    comment_text TEXT      NOT NULL,
+    is_internal  BOOLEAN   NOT NULL DEFAULT FALSE,
+    created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT pk_complaint_comments PRIMARY KEY (id),
+    CONSTRAINT fk_complaint_comments_complaint
+        FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE,
+    CONSTRAINT fk_complaint_comments_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE INDEX idx_complaint_comments_complaint
+    ON complaint_comments (complaint_id, created_at);
+
+CREATE TABLE notifications (
+    id           BIGSERIAL    NOT NULL,
+    user_id      BIGINT       NOT NULL,
+    complaint_id BIGINT,
+    title        VARCHAR(500) NOT NULL,
+    message      TEXT         NOT NULL,
+    type         VARCHAR(50)  NOT NULL,
+    action_url   VARCHAR(500),
+    is_read      BOOLEAN      NOT NULL DEFAULT FALSE,
+    read_at      TIMESTAMP,
+    created_at   TIMESTAMP    NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT pk_notifications PRIMARY KEY (id),
+    CONSTRAINT fk_notifications_user
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_notifications_complaint
+        FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE,
+    CONSTRAINT chk_notifications_type
+        CHECK (type IN (
+            'COMPLAINT_RECEIVED', 'VALIDATION_VALID', 'VALIDATION_REJECTED',
+            'VALIDATION_NEED_INFO', 'STATUS_CHANGE', 'NEW_COMMENT', 'ASSIGNED',
+            'EDIT_REMINDER', 'EDIT_DEADLINE_PASSED'
+        ))
+);
+
+CREATE INDEX idx_notifications_user ON notifications (user_id, created_at);
+CREATE INDEX idx_notifications_user_unread ON notifications (user_id, is_read);

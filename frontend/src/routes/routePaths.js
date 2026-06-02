@@ -33,13 +33,5 @@ export const BACKEND_ROLES = {
   admin: "ADMIN",
 };
 
-// All non-customer backend roles are treated as admin on the frontend
-export const STAFF_BACKEND_ROLES = [
-  "ADMIN",
-  "CS_STAFF",
-  "SPECIALIST",
-  "MANAGEMENT",
-];
-
 export const mapBackendRoleToRouteRole = (role) =>
-  STAFF_BACKEND_ROLES.includes(role) ? USER_ROLES.admin : USER_ROLES.customer;
+  role === BACKEND_ROLES.admin ? USER_ROLES.admin : USER_ROLES.customer;

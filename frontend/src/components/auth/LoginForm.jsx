@@ -49,7 +49,9 @@ export default function LoginForm() {
 
       navigate(routeRole === USER_ROLES.admin ? ROUTE_PATHS.adminDashboard : ROUTE_PATHS.customerDashboard);
     } catch (err) {
-      const message = err.response?.data?.message || "Invalid credentials. Please try again.";
+      const message = err.response
+        ? err.response.data?.message || "Sign in failed. Please try again."
+        : "Cannot connect to the backend at http://localhost:8080. Start the backend and try again.";
       setErrors({ form: message });
     } finally {
       setLoading(false);

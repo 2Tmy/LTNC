@@ -15,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -45,7 +47,7 @@ public class AuthService {
 
     /**
      * Registers a new customer account.
-     * Staff accounts (CS_STAFF, SPECIALIST, MANAGEMENT) must be created by an admin
+     * Admin accounts must be created explicitly
      * via a future admin endpoint — they cannot self-register.
      */
     public AuthResponse register(RegisterRequest request) {
@@ -54,18 +56,18 @@ public class AuthService {
                     "An account already exists with email: " + request.getEmail());
         }
 
-        // Default to CUSTOMER if caller omits the role field
-        Role role = (request.getRole() != null) ? request.getRole() : Role.CUSTOMER;
-
-        User user = User.builder()
+        User user = Objects.requireNonNull(User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
+                .phone(trimToNull(request.getPhone()))
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(role)
+                .role(Role.CUSTOMER)
                 .enabled(true)
-                .build();
+                .build(), "User builder returned null");
 
-        User saved = userRepository.save(user);
+        User saved = Objects.requireNonNull(
+                userRepository.save(Objects.requireNonNull(user, "User is required")),
+                "User repository returned null");
         String token = jwtTokenProvider.generateToken(saved, saved.getId(), saved.getRole().name());
         log.info("New user registered: {} (role={})", saved.getEmail(), saved.getRole());
 
@@ -86,8 +88,16 @@ public class AuthService {
                 .role(user.getRole().name())
                 .name(user.getName())
                 .email(user.getEmail())
+                .phone(user.getPhone())
                 .userId(user.getId())
                 .createdAt(user.getCreatedAt())
                 .build();
+    }
+
+    private String trimToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 }

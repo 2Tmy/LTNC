@@ -40,6 +40,18 @@ public class ComplaintValidation {
     @Column(name = "is_within_scope", nullable = false)
     private boolean isWithinScope = false;
 
+    @Builder.Default
+    @Column(name = "is_order_reference_valid", nullable = false)
+    private boolean isOrderReferenceValid = false;
+
+    @Builder.Default
+    @Column(name = "is_description_valid", nullable = false)
+    private boolean isDescriptionValid = false;
+
+    @Builder.Default
+    @Column(name = "is_evidence_valid", nullable = false)
+    private boolean isEvidenceValid = false;
+
     @Column(name = "rejection_reason", columnDefinition = "TEXT")
     private String rejectionReason;
 

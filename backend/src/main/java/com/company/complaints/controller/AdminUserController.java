@@ -20,7 +20,7 @@ public class AdminUserController {
     private final JdbcTemplate jdbcTemplate;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('MANAGEMENT', 'CS_STAFF', 'SPECIALIST')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllUsers() {
         String sql = """
                 SELECT id, name, email, role, enabled, created_at, updated_at

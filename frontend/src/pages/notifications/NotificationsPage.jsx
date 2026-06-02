@@ -1,13 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import NotificationList from "../../components/notifications/NotificationList.jsx";
 import { useCurrentUser } from "../../hooks/useCurrentUser.js";
 import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
-import { getStoredNotifications, saveStoredNotifications } from "../../mocks/notificationsMock.js";
+import { getMyNotifications, markAllNotificationsRead, markNotificationRead } from "../../services/customerNotificationService.js";
 
 export default function NotificationsPage() {
   const user = useCurrentUser();
-  const [notifications, setNotifications] = useState(() => getStoredNotifications());
+  const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState("all");
 
   const unreadCount = notifications.filter((notification) => notification.unread).length;
@@ -19,21 +19,17 @@ export default function NotificationsPage() {
     return notifications;
   }, [filter, notifications]);
 
-  const updateNotifications = (nextNotifications) => {
-    setNotifications(nextNotifications);
-    saveStoredNotifications(nextNotifications);
+  const load = async () => setNotifications(await getMyNotifications());
+  useEffect(() => { load(); }, []);
+
+  const handleMarkRead = async (notificationId) => {
+    await markNotificationRead(notificationId);
+    await load();
   };
 
-  const handleMarkRead = (notificationId) => {
-    updateNotifications(
-      notifications.map((notification) =>
-        notification.id === notificationId ? { ...notification, unread: false } : notification
-      )
-    );
-  };
-
-  const handleMarkAllRead = () => {
-    updateNotifications(notifications.map((notification) => ({ ...notification, unread: false })));
+  const handleMarkAllRead = async () => {
+    await markAllNotificationsRead();
+    await load();
   };
 
   return (

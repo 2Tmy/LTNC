@@ -5,8 +5,8 @@ const statusMap = {
   PENDING_VALIDATION: "Validating",
   VALIDATED: "Validating",
   NEED_MORE_INFO: "Validating",
-  IN_REVIEW: "Investigating",
-  INVESTIGATING: "Investigating",
+  IN_REVIEW: "Resolving",
+  INVESTIGATING: "Resolving",
   RESOLVING: "Resolving",
   PENDING_APPROVAL: "Resolving",
   AWAITING_APPROVAL: "Resolving",
@@ -60,17 +60,17 @@ const saveExtras = (complaintId, extras) => {
   localStorage.setItem(EXTRA_STORAGE_KEY, JSON.stringify(allExtras));
 };
 
-const getMockExtras = (complaintId) => ({
-  orderId: `MOCK-${String(complaintId || "0000").padStart(4, "0")}`,
-  phone: "(555) 010-0000",
-  evidenceFiles: ["mock-evidence-summary.pdf"],
+const getDefaultExtras = () => ({
+  orderId: "",
+  phone: "",
+  evidenceFiles: [],
   resolution: "",
 });
 
 const getExtras = (complaintId) => {
   const stored = readExtras()[String(complaintId)] || {};
   return {
-    ...getMockExtras(complaintId),
+    ...getDefaultExtras(),
     ...stored,
   };
 };
@@ -96,13 +96,6 @@ const getInitials = (name) => {
     .slice(0, 2)
     .toUpperCase();
 };
-
-const toBackendComplaintPayload = (payload) => ({
-  title: payload.title,
-  category: payload.category,
-  priority: payload.priority,
-  description: payload.description,
-});
 
 export const toComplaintUiModel = (c) => {
   const extras = getExtras(c.id);
@@ -131,6 +124,9 @@ export const toComplaintUiModel = (c) => {
     phone: c.phone || extras.phone,
     description: c.description || "",
     resolution: c.resolution || extras.resolution,
+    investigationSummary: c.investigationSummary || "",
+    rootCause: c.rootCause || "",
+    rejectionReason: c.rejectionReason || "",
 
     customerId: c.customerId,
     customer: c.customerName || "Customer",
@@ -157,24 +153,37 @@ export const toComplaintUiModel = (c) => {
     assignedAt: formatDate(c.assignedAt),
     resolvedAt: formatDate(c.resolvedAt),
 
-    evidence: (c.evidenceFiles || extras.evidenceFiles || []).map((name) => ({
-      name,
-      type: c.evidenceFiles ? "Uploaded file" : "Mock/local file",
-    })),
+    evidence: c.evidenceAttachments?.length
+      ? c.evidenceAttachments.map((attachment) => ({
+          id: attachment.id,
+          name: attachment.fileName,
+          type: attachment.fileType,
+          size: attachment.fileSize,
+        }))
+      : (c.evidenceFiles || extras.evidenceFiles || []).map((name) => ({
+          name,
+          type: c.evidenceFiles ? "Uploaded file" : "Mock/local file",
+        })),
   };
 };
 
 export const createComplaint = async (payload) => {
-  const response = await apiClient.post("/api/complaints", toBackendComplaintPayload(payload));
+  const formData = new FormData();
+  ["title", "category", "priority", "orderId", "phone", "description"].forEach((field) => {
+    formData.append(field, payload[field]);
+  });
+  payload.evidenceFiles.forEach((file) => formData.append("evidenceFiles", file));
+
+  const response = await apiClient.post("/api/complaints", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   const created = response.data.data;
 
   saveExtras(created.id, {
-    orderId: payload.orderId?.trim() || getMockExtras(created.id).orderId,
-    phone: payload.phone?.trim() || getMockExtras(created.id).phone,
-    evidenceFiles: payload.evidenceFiles?.length
-      ? payload.evidenceFiles
-      : getMockExtras(created.id).evidenceFiles,
-    resolution: getMockExtras(created.id).resolution,
+    orderId: payload.orderId?.trim() || "",
+    phone: payload.phone?.trim() || "",
+    evidenceFiles: [],
+    resolution: "",
   });
 
   return toComplaintUiModel(created);
@@ -183,11 +192,6 @@ export const createComplaint = async (payload) => {
 export const getMyComplaints = async () => {
   const response = await apiClient.get("/api/complaints/my");
   return response.data.data.map(toComplaintUiModel);
-};
-
-export const getComplaintById = async (complaintId) => {
-  const response = await apiClient.get(`/api/complaints/${complaintId}`);
-  return toComplaintUiModel(response.data.data);
 };
 
 export const getComplaintByCode = async (complaintCode) => {
@@ -207,6 +211,45 @@ export const getSubmittedComplaints = async () => {
 
 export const receiveComplaint = async (complaintId) => {
   const response = await apiClient.put(`/api/complaints/${complaintId}/receive`);
+  return toComplaintUiModel(response.data.data);
+};
+
+export const validateComplaint = async (complaintId, checklist) => {
+  const response = await apiClient.put(`/api/complaints/${complaintId}/validate`, checklist);
+  return toComplaintUiModel(response.data.data);
+};
+
+export const rejectComplaint = async (complaintId, payload) => {
+  const response = await apiClient.put(`/api/complaints/${complaintId}/reject-validation`, payload);
+  return toComplaintUiModel(response.data.data);
+};
+
+export const openEvidenceFile = async (attachmentId) => {
+  const viewer = window.open("", "_blank");
+  try {
+    const response = await apiClient.get(`/api/attachments/${attachmentId}/content`, {
+      responseType: "blob",
+    });
+    const objectUrl = URL.createObjectURL(response.data);
+    if (viewer) {
+      viewer.location.href = objectUrl;
+    } else {
+      window.location.href = objectUrl;
+    }
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+  } catch (error) {
+    viewer?.close();
+    throw error;
+  }
+};
+
+export const proposeResolution = async (complaintId, payload) => {
+  const response = await apiClient.put(`/api/complaints/${complaintId}/resolution`, payload);
+  return toComplaintUiModel(response.data.data);
+};
+
+export const sendComplaintResponse = async (complaintId) => {
+  const response = await apiClient.put(`/api/complaints/${complaintId}/send-response`);
   return toComplaintUiModel(response.data.data);
 };
 

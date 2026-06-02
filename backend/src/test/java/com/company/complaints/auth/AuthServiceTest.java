@@ -59,8 +59,7 @@ class AuthServiceTest {
         AuthResponse result = authService.login(new LoginRequest("alex@test.com", "secret123"));
 
         assertThat(result.getToken()).isEqualTo("jwt.token.here");
-        // Frontend expects lowercase "customer" (mapped from CUSTOMER)
-        assertThat(result.getRole()).isEqualTo("customer");
+        assertThat(result.getRole()).isEqualTo("CUSTOMER");
         assertThat(result.getEmail()).isEqualTo("alex@test.com");
         assertThat(result.getUserId()).isEqualTo(1L);
     }
@@ -103,6 +102,7 @@ class AuthServiceTest {
 
     @Test
     @DisplayName("register — new email creates account and returns token")
+    @SuppressWarnings("null") // Mockito matchers return a null placeholder while defining stubs.
     void testRegisterSuccess() {
         when(userRepository.existsByEmail("new@test.com")).thenReturn(false);
         when(passwordEncoder.encode("password1")).thenReturn("bcrypt_hash");
@@ -123,7 +123,7 @@ class AuthServiceTest {
                 new RegisterRequest("New User", "new@test.com", "password1", null));
 
         assertThat(result.getToken()).isEqualTo("new.jwt.token");
-        assertThat(result.getRole()).isEqualTo("customer");
+        assertThat(result.getRole()).isEqualTo("CUSTOMER");
         assertThat(result.getUserId()).isEqualTo(2L);
         // Password must be encoded before saving — never stored as plaintext
         verify(passwordEncoder).encode("password1");
@@ -142,7 +142,8 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("register — null role defaults to CUSTOMER")
+    @DisplayName("register - public registration always creates a CUSTOMER")
+    @SuppressWarnings("null") // Mockito matchers return a null placeholder while defining stubs.
     void testRegisterDefaultsToCustomer() {
         when(userRepository.existsByEmail("anon@test.com")).thenReturn(false);
         when(passwordEncoder.encode(any())).thenReturn("hash");
@@ -155,10 +156,9 @@ class AuthServiceTest {
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
         when(jwtTokenProvider.generateToken(savedUser, 3L, "CUSTOMER")).thenReturn("tok");
 
-        // role field deliberately omitted (null)
         AuthResponse result = authService.register(
                 new RegisterRequest("Anon", "anon@test.com", "pass1234", null));
 
-        assertThat(result.getRole()).isEqualTo("customer");
+        assertThat(result.getRole()).isEqualTo("CUSTOMER");
     }
 }

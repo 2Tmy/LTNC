@@ -70,7 +70,7 @@ export default function RegisterForm() {
     setErrors({});
 
     try {
-      const res = await register(form.fullName, form.email, form.password);
+      const res = await register(form.fullName, form.email, form.password, form.phone);
       const { token, name, email, role, createdAt } = res.data.data;
 
       localStorage.setItem("token", token);

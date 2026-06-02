@@ -32,10 +32,9 @@ import java.util.Map;
  *
  * Role strategy (aligned with frontend):
  *   - Frontend routePaths.js recognises two string values: "customer" and "admin".
- *   - The JWT *claim* stores the full backend role (CUSTOMER, CS_STAFF, SPECIALIST,
- *     MANAGEMENT) so Spring Security can enforce fine-grained access on future endpoints.
- *   - AuthResponse.role returns the frontend-compatible string ("customer" / "admin")
- *     so the client's ProtectedRoute guard works without any frontend change.
+ *   - The JWT claim stores the backend role (CUSTOMER or ADMIN).
+ *   - AuthResponse.role returns that backend role and the frontend maps it directly
+ *     to the matching route group.
  *
  * CORS origins match the Vite dev server (5173) and the optional CRA dev server (3000).
  */

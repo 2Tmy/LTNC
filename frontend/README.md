@@ -1,63 +1,46 @@
 # Resolution Center Frontend
 
-React + Vite frontend for a complaint resolution portal with customer and staff/admin workflows.
+React + Vite frontend for a complaint resolution portal with two roles:
+`CUSTOMER` submits complaints and `ADMIN` handles the full resolution flow.
 
 ## Requirements
 
 - Node.js 18 or newer
 - npm
 
-## Setup
-
-Install dependencies from this project folder:
+## Run Locally
 
 ```bash
 npm install
-```
-
-## Run Locally
-
-Start the Vite development server:
-
-```bash
 npm run dev
 ```
 
-Then open the local URL printed by Vite, usually:
-
-```txt
-http://localhost:5173
-```
+Open the local URL printed by Vite, usually `http://localhost:5173`.
 
 ## Build
-
-Create a production build:
 
 ```bash
 npm run build
 ```
 
-Preview the production build:
-
-```bash
-npm run preview
-```
-
 ## Demo Accounts
 
-Customer:
+All test accounts use the password `password123`.
 
-```txt
-Email: my@gmail.com
-Password: password123
-```
-
-Staff/Admin:
-
-```txt
-Email: admin@gmail.com
-Password: 87654321
-```
+| Role | Email |
+|------|-------|
+| Admin | `admin@test.com` |
+| Admin | `agent@test.com` |
+| Customer | `alice@test.com` |
+| Customer | `bob@test.com` |
+| Customer | `charlie@test.com` |
+| Customer | `diana@test.com` |
+| Customer | `edward@test.com` |
+| Customer | `fiona@test.com` |
+| Customer | `george@test.com` |
+| Customer | `hannah@test.com` |
+| Customer | `ivan@test.com` |
+| Customer | `julia@test.com` |
 
 ## Main Routes
 
@@ -69,34 +52,12 @@ Password: 87654321
 /customer/notifications
 /customer/profile
 /admin/dashboard
-/admin/complaints
-/admin/complaint-status
-/admin/staff
+/admin/tiep-nhan
+/admin/xem-xet
+/admin/xu-ly
+/admin/phan-hoi
 /admin/users
 ```
 
-## Backend Integration Notes
-
-The UI currently uses temporary mock/localStorage data for frontend development. When the backend is ready, move API calls into the files under `src/services/` and replace direct mock/localStorage usage with service calls.
-
-Recommended service entry points:
-
-- `src/services/authService.js`
-- `src/services/complaintService.js`
-- `src/services/notificationService.js`
-- `src/services/staffService.js`
-- `src/services/customerService.js`
-- `src/services/fileUploadService.js`
-
-## Project Structure
-
-```txt
-src/
-  components/   Reusable UI components
-  layouts/      Customer and admin layouts
-  pages/        Route pages
-  routes/       React Router configuration
-  services/     Backend API integration layer
-  mocks/        Temporary frontend seed data
-  utils/        Shared helpers
-```
+Authentication, complaints, attachments, workflow transitions, account listing,
+and customer notifications are connected to the backend APIs under `src/services/`.

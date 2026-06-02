@@ -32,7 +32,7 @@ LTNC/
 | User login | `POST /api/auth/login` — validates credentials, returns JWT |
 | Current user profile | `GET /api/auth/me` — returns profile of the logged-in user |
 | Role check | `GET /api/auth/check-role` — returns full role info with boolean flags |
-| Role-gated endpoints | `GET /api/auth/customer-only`, `/staff-only`, `/management-only` |
+| Role-gated endpoints | `GET /api/auth/customer-only`, `/admin-only` |
 
 ### Security
 
@@ -47,12 +47,10 @@ LTNC/
 | Role | Description |
 |------|-------------|
 | `CUSTOMER` | External user who submits complaints |
-| `CS_STAFF` | Customer service staff — receives and validates complaints |
-| `SPECIALIST` | Investigates complaints |
-| `MANAGEMENT` | Approves resolutions |
+| `ADMIN` | Receives, validates, processes, and responds to complaints |
 
 New registrations via the public endpoint always receive the `CUSTOMER` role.
-Staff accounts must be created directly in the database.
+Admin accounts must be created directly in the database.
 
 ### Tech Stack
 
@@ -133,33 +131,43 @@ spring.datasource.password=1
 
 ### Table: `users`
 
-Hibernate auto-creates this table on first startup (`ddl-auto=update`).
+`schema.sql` creates this table on startup and Hibernate verifies it (`ddl-auto=validate`).
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | `BIGINT` | PK, auto-increment | Unique user ID |
 | `name` | `VARCHAR` | NOT NULL | Full name |
 | `email` | `VARCHAR` | NOT NULL, UNIQUE | Login email |
+| `phone` | `VARCHAR` | | Contact phone |
 | `password` | `VARCHAR` | NOT NULL | BCrypt hash |
-| `role` | `VARCHAR` | NOT NULL | `CUSTOMER`, `CS_STAFF`, `SPECIALIST`, `MANAGEMENT` |
+| `role` | `VARCHAR` | NOT NULL | `CUSTOMER`, `ADMIN` |
 | `enabled` | `BOOLEAN` | NOT NULL, default `true` | Account active flag |
 | `created_at` | `TIMESTAMP` | NOT NULL | Set automatically on insert |
 
 ### Test Data
 
-On every server startup, `data.sql` seeds the database with 8 test accounts.
+Run the `seed` profile when you explicitly want to reset the local database.
+Normal startup preserves existing data.
 **All test accounts use the password `password123`.**
 
-| Email | Role |
-|-------|------|
-| customer1@test.com | CUSTOMER |
-| customer2@test.com | CUSTOMER |
-| customer3@test.com | CUSTOMER |
-| staff1@test.com | CS_STAFF |
-| staff2@test.com | CS_STAFF |
-| specialist1@test.com | SPECIALIST |
-| specialist2@test.com | SPECIALIST |
-| manager1@test.com | MANAGEMENT |
+| Email | Role | Name |
+|-------|------|------|
+| admin@test.com | ADMIN | Admin User |
+| agent@test.com | ADMIN | Support Agent |
+| alice@test.com | CUSTOMER | Alice Nguyen |
+| bob@test.com | CUSTOMER | Bob Tran |
+| charlie@test.com | CUSTOMER | Charlie Le |
+| diana@test.com | CUSTOMER | Diana Pham |
+| edward@test.com | CUSTOMER | Edward Vu |
+| fiona@test.com | CUSTOMER | Fiona Hoang |
+| george@test.com | CUSTOMER | George Do |
+| hannah@test.com | CUSTOMER | Hannah Bui |
+| ivan@test.com | CUSTOMER | Ivan Dao |
+| julia@test.com | CUSTOMER | Julia Ly |
+
+The seed also inserts 10 complaints covering every status:
+`SUBMITTED`, `PENDING_VALIDATION`, `INVESTIGATING`, `RESOLVING`, `RESOLVED`,
+`REJECTED`, `NEED_MORE_INFO`, `CLOSED`.
 
 To verify in psql:
 
@@ -179,8 +187,9 @@ SELECT id, name, email, role FROM users ORDER BY role, id;
 | `title` | `VARCHAR` | NOT NULL | Brief summary |
 | `category` | `VARCHAR` | | Complaint category |
 | `priority` | `VARCHAR` | | Low, Medium, High |
-| `status` | `VARCHAR` | NOT NULL | `SUBMITTED`, `RECEIVED`, `IN_PROGRESS`, `RESOLVED`, `REJECTED` |
+| `status` | `VARCHAR` | NOT NULL | Complaint lifecycle status, such as `SUBMITTED`, `PENDING_VALIDATION`, or `RESOLVED` |
 | `order_id` | `VARCHAR` | | Related order reference |
+| `phone` | `VARCHAR` | | Complaint contact phone |
 | `description` | `TEXT` | | Detailed explanation |
 | `resolution` | `TEXT` | | Final response/resolution |
 | `created_at` | `TIMESTAMP` | NOT NULL | Set automatically |
@@ -206,6 +215,14 @@ Wait for:
 ```
 Tomcat started on port 8080
 ```
+
+To reset the local database and restore demo accounts, stop the backend and run:
+
+```powershell
+mvn spring-boot:run "-Dspring-boot.run.profiles=seed"
+```
+
+Stop that process after startup, then return to normal `mvn spring-boot:run`.
 
 The API is now available at `http://localhost:8080`.
 Swagger UI is available at `http://localhost:8080/swagger-ui.html`.
@@ -242,7 +259,7 @@ Stop-Process -Id $p -Force
 
 This section describes the complaint management features that have been implemented on top of the existing authentication and security system.
 
-The module focuses on enabling customers to submit complaints and allowing staff to receive and process them.
+The module focuses on enabling customers to submit complaints and allowing one admin role to receive and process them.
 
 ---
 
@@ -255,9 +272,9 @@ The following REST endpoints have been implemented:
 | `POST` | `/api/complaints` | Yes | CUSTOMER | Submit a new complaint |
 | `GET` | `/api/complaints/my` | Yes | CUSTOMER | Retrieve current user's complaints |
 | `GET` | `/api/complaints/{complaintCode}` | Yes | ALL ROLES | Get complaint detail |
-| `GET` | `/api/complaints` | Yes | STAFF | Retrieve all complaints |
-| `GET` | `/api/complaints/submitted` | Yes | STAFF | Retrieve submitted (pending) complaints |
-| `PUT` | `/api/complaints/{complaintCode}/receive` | Yes | STAFF | Mark complaint as received |
+| `GET` | `/api/complaints` | Yes | ADMIN | Retrieve all complaints |
+| `GET` | `/api/complaints/submitted` | Yes | ADMIN | Retrieve submitted (pending) complaints |
+| `PUT` | `/api/complaints/{id}/receive` | Yes | ADMIN | Mark complaint as received |
 
 ---
 
@@ -266,15 +283,16 @@ The following REST endpoints have been implemented:
 The complaint lifecycle is currently defined as:
 ```text
 
-SUBMITTED → RECEIVED → IN_PROGRESS → RESOLVED
+SUBMITTED → PENDING_VALIDATION → INVESTIGATING → RESOLVING → RESOLVED
 
 To align with frontend display, status values are mapped as follows:
 
 | Backend Status | UI Representation |
 |----------------|------------------|
 | `SUBMITTED` | Pending |
-| `RECEIVED` | Validating |
-| `IN_PROGRESS` | Investigating |
+| `PENDING_VALIDATION` | Validating |
+| `INVESTIGATING` | Investigating |
+| `RESOLVING` | Resolving |
 | `RESOLVED` | Resolved |
 | `REJECTED` | Rejected |
 
@@ -287,7 +305,7 @@ To align with frontend display, status values are mapped as follows:
 
 - Authorization logic includes:
 - Customers can only access their own complaints
-- Staff roles can access all complaints
+- Admin can access all complaints
 
 - The service layer handles:
 - Complaint creation
@@ -313,12 +331,12 @@ The frontend has been integrated with the backend APIs for real-time data handli
 
 ---
 
-#### Staff (Admin) Features
+#### Admin Features
 
 - View submitted complaints  
-`/admin/complaints`
+`/admin/tiep-nhan`
 
-- Receive complaint (status update from `SUBMITTED` → `RECEIVED`)
+- Receive complaint (status update from `SUBMITTED` → `PENDING_VALIDATION`)
 
 - View complaint detail (separate admin view)
 
@@ -328,7 +346,7 @@ The frontend has been integrated with the backend APIs for real-time data handli
 
 - Customer complaint submission flow
 - Complaint detail page (customer and admin)
-- Staff complaint receiving flow
+- Admin complaint receiving flow
 - Backend API integration with frontend
 - Role-based access validation
 
@@ -362,8 +380,7 @@ Full interactive documentation is available at `http://localhost:8080/swagger-ui
 | `GET` | `/api/auth/me` | Yes | Get current user profile |
 | `GET` | `/api/auth/check-role` | Yes | Get role info with boolean flags |
 | `GET` | `/api/auth/customer-only` | Yes — CUSTOMER | Role access test |
-| `GET` | `/api/auth/staff-only` | Yes — CS_STAFF / SPECIALIST / MANAGEMENT | Role access test |
-| `GET` | `/api/auth/management-only` | Yes — MANAGEMENT | Role access test |
+| `GET` | `/api/auth/admin-only` | Yes — ADMIN | Role access test |
 
 ### Request / Response Format
 
@@ -417,7 +434,7 @@ backend/src/main/java/com/company/complaints/
 ├── entity/
 │   └── User.java                       # JPA entity, implements UserDetails
 ├── enums/
-│   └── Role.java                       # CUSTOMER, CS_STAFF, SPECIALIST, MANAGEMENT
+│   └── Role.java                       # CUSTOMER, ADMIN
 ├── exception/
 │   ├── CustomExceptions.java           # Domain-specific exception classes
 │   └── GlobalExceptionHandler.java     # Maps exceptions to HTTP responses
@@ -432,5 +449,5 @@ backend/src/main/java/com/company/complaints/
 
 backend/src/main/resources/
 ├── application.properties              # DB, JWT, server config
-└── data.sql                            # Test data seeded on every startup
+└── data.sql                            # Demo data loaded only with the seed profile
 ```

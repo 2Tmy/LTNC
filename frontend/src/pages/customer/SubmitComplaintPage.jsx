@@ -40,25 +40,16 @@ const COMPLAINT_TYPES = [
   },
 ];
 
-const priorities = [
-  { value: "LOW", label: "Low" },
-  { value: "MEDIUM", label: "Medium" },
-  { value: "HIGH", label: "High" },
-  { value: "URGENT", label: "Urgent" },
-];
-
 const accentMap = {
   blue: {
     card: "border-blue-400 bg-blue-50/60",
     iconBox: "bg-blue-100 text-blue-700",
     badge: "bg-blue-600 text-white",
-    summary: "border-blue-200 bg-blue-50 text-blue-800",
   },
   orange: {
     card: "border-orange-400 bg-orange-50/60",
     iconBox: "bg-orange-100 text-orange-700",
     badge: "bg-orange-600 text-white",
-    summary: "border-orange-200 bg-orange-50 text-orange-800",
   },
 };
 
@@ -78,7 +69,6 @@ export default function SubmitComplaintPage() {
   const [form, setForm] = useState({
     subcategory: "",
     title: "",
-    priority: "MEDIUM",
     orderId: "",
     description: "",
     evidenceFiles: [],
@@ -98,7 +88,25 @@ export default function SubmitComplaintPage() {
   };
 
   const updateFiles = (e) => {
-    setForm((f) => ({ ...f, evidenceFiles: Array.from(e.target.files || []) }));
+    const picked = Array.from(e.target.files || []);
+    setForm((f) => {
+      const merged = [...f.evidenceFiles];
+      for (const file of picked) {
+        if (!merged.some((ef) => ef.name === file.name && ef.size === file.size)) {
+          merged.push(file);
+        }
+      }
+      return { ...f, evidenceFiles: merged };
+    });
+    e.target.value = "";
+    setErrors((current) => ({ ...current, evidenceFiles: "" }));
+  };
+
+  const removeFile = (index) => {
+    setForm((f) => ({
+      ...f,
+      evidenceFiles: f.evidenceFiles.filter((_, i) => i !== index),
+    }));
   };
 
   const fmtSize = (size) => {
@@ -112,8 +120,14 @@ export default function SubmitComplaintPage() {
     if (!selectedType) e.type = "Please select a complaint type.";
     if (!form.subcategory) e.subcategory = "Please select a specific issue.";
     if (!form.title.trim()) e.title = "Title is required.";
+    if (!form.orderId.trim()) e.orderId = "Order or tracking ID is required.";
+    if (!form.phone.trim()) e.phone = "Contact phone is required.";
     if (!form.description.trim()) e.description = "Description is required.";
     else if (form.description.trim().length < 20) e.description = "Please provide at least 20 characters.";
+    if (!form.evidenceFiles.length) e.evidenceFiles = "Attach at least one image or PDF as evidence.";
+    if (form.evidenceFiles.some((file) => file.size > 10 * 1024 * 1024)) {
+      e.evidenceFiles = "Each evidence file must not exceed 10 MB.";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -132,11 +146,10 @@ export default function SubmitComplaintPage() {
       const payload = {
         title: form.title.trim(),
         category: selectedTypeData.backendCategory,
-        priority: form.priority,
         orderId: form.orderId.trim(),
         description: `[${subLabel}]\n\n${form.description.trim()}`,
         phone: form.phone.trim(),
-        evidenceFiles: form.evidenceFiles.map((f) => f.name),
+        evidenceFiles: form.evidenceFiles,
       };
 
       const created = await createComplaint(payload);
@@ -277,37 +290,26 @@ export default function SubmitComplaintPage() {
                       {errors.title && <p className="mt-1 text-xs text-red-600">{errors.title}</p>}
                     </div>
 
-                    {/* Priority + Order */}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div>
-                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="priority">
-                          Priority
-                        </label>
-                        <select className={inputClass} id="priority" name="priority" value={form.priority} onChange={updateField}>
-                          {priorities.map((p) => (
-                            <option key={p.value} value={p.value}>{p.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="orderId">
-                          Order / Tracking ID
-                        </label>
-                        <input
-                          className={inputClass}
-                          id="orderId"
-                          name="orderId"
-                          value={form.orderId}
-                          onChange={updateField}
-                          placeholder="e.g. ORD-20240001"
-                        />
-                      </div>
+                    {/* Order */}
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="orderId">
+                        Order / Tracking ID <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        className={inputClass}
+                        id="orderId"
+                        name="orderId"
+                        value={form.orderId}
+                        onChange={updateField}
+                        placeholder="e.g. ORD-20240001"
+                      />
+                      {errors.orderId && <p className="mt-1 text-xs text-red-600">{errors.orderId}</p>}
                     </div>
 
                     {/* Phone */}
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="phone">
-                        Contact phone
+                        Contact phone <span className="text-red-500">*</span>
                       </label>
                       <input
                         className={inputClass}
@@ -318,6 +320,7 @@ export default function SubmitComplaintPage() {
                         onChange={updateField}
                         placeholder="Your phone number"
                       />
+                      {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone}</p>}
                     </div>
 
                     {/* Description */}
@@ -339,7 +342,7 @@ export default function SubmitComplaintPage() {
                     {/* Evidence */}
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="evidence">
-                        Supporting evidence
+                        Supporting evidence <span className="text-red-500">*</span>
                       </label>
                       <label
                         htmlFor="evidence"
@@ -347,7 +350,7 @@ export default function SubmitComplaintPage() {
                       >
                         <span className="material-symbols-outlined text-[32px] text-slate-400">upload_file</span>
                         <span className="mt-2 text-sm font-medium text-slate-600">Click to upload files</span>
-                        <span className="mt-1 text-xs text-slate-400">Images, PDF, or documents</span>
+                        <span className="mt-1 text-xs text-slate-400">JPG, PNG, WEBP or PDF · max 10 MB per file</span>
                       </label>
                       <input
                         className="sr-only"
@@ -356,11 +359,12 @@ export default function SubmitComplaintPage() {
                         type="file"
                         multiple
                         onChange={updateFiles}
-                        accept="image/*,.pdf,.doc,.docx,.txt"
+                        accept="image/jpeg,image/png,image/webp,.pdf"
                       />
+                      {errors.evidenceFiles && <p className="mt-1 text-xs text-red-600">{errors.evidenceFiles}</p>}
                       {form.evidenceFiles.length > 0 && (
                         <div className="mt-2 space-y-1">
-                          {form.evidenceFiles.map((file) => (
+                          {form.evidenceFiles.map((file, index) => (
                             <div
                               key={`${file.name}-${file.size}`}
                               className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
@@ -368,6 +372,14 @@ export default function SubmitComplaintPage() {
                               <span className="material-symbols-outlined text-[18px] text-blue-500">attach_file</span>
                               <span className="min-w-0 flex-1 truncate text-xs text-slate-700">{file.name}</span>
                               <span className="shrink-0 text-xs text-slate-400">{fmtSize(file.size)}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeFile(index)}
+                                className="ml-1 rounded p-0.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                                aria-label={`Remove ${file.name}`}
+                              >
+                                <span className="material-symbols-outlined text-[16px]">close</span>
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -380,34 +392,8 @@ export default function SubmitComplaintPage() {
               {/* Right panel */}
               <aside className="h-fit space-y-4">
                 <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <h3 className="mb-3 text-sm font-semibold text-slate-800">Summary</h3>
-
-                  {selectedTypeData && (
-                    <div className={`mb-4 rounded-lg border p-3 text-sm ${accentMap[selectedTypeData.accent].summary}`}>
-                      <p className="font-semibold">{selectedTypeData.label}</p>
-                      {form.subcategory && (
-                        <p className="mt-0.5 text-xs opacity-80">
-                          {selectedTypeData.subcategories.find((s) => s.value === form.subcategory)?.label}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  <ul className="space-y-2 text-xs text-slate-500">
-                    {[
-                      "Include your order ID or tracking number.",
-                      "Explain the impact and your expected resolution.",
-                      "Attach photos or documents if available.",
-                    ].map((tip) => (
-                      <li key={tip} className="flex gap-2">
-                        <span className="material-symbols-outlined mt-0.5 text-[14px] text-green-500">check_circle</span>
-                        {tip}
-                      </li>
-                    ))}
-                  </ul>
-
                   {submitError && (
-                    <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
                       {submitError}
                     </div>
                   )}
@@ -415,7 +401,7 @@ export default function SubmitComplaintPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <span className="material-symbols-outlined text-[18px]">
                       {isSubmitting ? "hourglass_top" : "send"}

@@ -9,13 +9,13 @@ import LoginPage from "../pages/auth/LoginPage.jsx";
 import NotificationsPage from "../pages/notifications/NotificationsPage.jsx";
 import ProfilePage from "../pages/profile/ProfilePage.jsx";
 import RegisterPage from "../pages/auth/RegisterPage.jsx";
-import StaffDashboardPage from "../pages/staff/dashboard/StaffDashboardPage.jsx";
-import ReceiveComplaintsPage from "../pages/staff/customer-service/ReceiveComplaintsPage.jsx";
-import AdminComplaintDetailPage from "../pages/staff/customer-service/AdminComplaintDetailPage.jsx";
-import XemXetPage from "../pages/staff/process/XemXetPage.jsx";
-import XuLyPage from "../pages/staff/process/XuLyPage.jsx";
-import PhanHoiPage from "../pages/staff/process/PhanHoiPage.jsx";
-import ManagerDashboardPage from "../pages/staff/manager/ManagerDashboardPage.jsx";
+import AdminDashboardPage from "../pages/admin/dashboard/AdminDashboardPage.jsx";
+import ReceiveComplaintsPage from "../pages/admin/customer-service/ReceiveComplaintsPage.jsx";
+import AdminComplaintDetailPage from "../pages/admin/customer-service/AdminComplaintDetailPage.jsx";
+import XemXetPage from "../pages/admin/process/XemXetPage.jsx";
+import XuLyPage from "../pages/admin/process/XuLyPage.jsx";
+import PhanHoiPage from "../pages/admin/process/PhanHoiPage.jsx";
+import AdminUsersPage from "../pages/admin/users/AdminUsersPage.jsx";
 import { ProtectedRoute, RoleRedirect } from "./protectedRoutes.jsx";
 import { ROUTE_PATHS, USER_ROLES } from "./routePaths.js";
 
@@ -39,19 +39,18 @@ export default function AppRouter() {
 
         {/* Admin routes */}
         <Route element={<ProtectedRoute allowedRoles={[USER_ROLES.admin]} />}>
-          <Route path={ROUTE_PATHS.adminDashboard} element={<StaffDashboardPage />} />
+          <Route path={ROUTE_PATHS.adminDashboard} element={<AdminDashboardPage />} />
           <Route path={ROUTE_PATHS.adminReceive} element={<ReceiveComplaintsPage />} />
           <Route path={ROUTE_PATHS.adminReview} element={<XemXetPage />} />
           <Route path={ROUTE_PATHS.adminProcess} element={<XuLyPage />} />
           <Route path={ROUTE_PATHS.adminResponse} element={<PhanHoiPage />} />
           <Route path={ROUTE_PATHS.adminComplaintDetail} element={<AdminComplaintDetailPage />} />
-          <Route path={ROUTE_PATHS.adminUsers} element={<ManagerDashboardPage />} />
+          <Route path={ROUTE_PATHS.adminUsers} element={<AdminUsersPage />} />
         </Route>
 
         <Route path={ROUTE_PATHS.unauthorized} element={<UnauthorizedPage />} />
         <Route path="/admin/complaints" element={<Navigate to={ROUTE_PATHS.adminReceive} replace />} />
         <Route path="/admin/complaint-status" element={<Navigate to={ROUTE_PATHS.adminProcess} replace />} />
-        <Route path="/staff/dashboard" element={<Navigate to={ROUTE_PATHS.adminDashboard} replace />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>

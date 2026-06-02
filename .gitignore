@@ -26,6 +26,7 @@ Thumbs.db
 # Backend (Spring Boot / Java / Maven)
 # =========================
 backend/target/
+backend/uploads/
 *.class
 *.jar
 *.war

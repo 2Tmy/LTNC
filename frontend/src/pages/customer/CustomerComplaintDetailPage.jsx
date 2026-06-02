@@ -4,8 +4,8 @@ import { useCurrentUser } from "../../hooks/useCurrentUser.js";
 import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
 import { ROUTE_PATHS } from "../../routes/routePaths.js";
-import { getComplaintById } from "../../services/complaintService.js";
 import { getComplaintByCode } from "../../services/complaintService.js";
+import EvidenceFileList from "../../components/complaint/EvidenceFileList.jsx";
 
 const statusStyles = {
   Pending: "bg-orange-50 text-orange-700",
@@ -118,22 +118,22 @@ export default function CustomerComplaintDetailPage() {
     },
     {
       label: "Validating",
-      description: "Staff is validating the complaint",
+      description: "Admin is validating the complaint",
       icon: "fact_check",
     },
     {
       label: "Investigating",
-      description: "Specialist is handling the complaint",
+      description: "Admin is handling the complaint",
       icon: "search",
     },
     {
       label: "Resolving",
-      description: "Specialist reply is waiting for manager review",
+      description: "Admin response is being prepared",
       icon: "rate_review",
     },
     {
       label: "Resolved",
-      description: "Manager decision sent to customer",
+      description: "Admin response sent to customer",
       icon: "task_alt",
     },
   ];
@@ -219,6 +219,14 @@ export default function CustomerComplaintDetailPage() {
 
           <div className="grid grid-cols-1 gap-lg lg:grid-cols-[1.3fr_0.7fr]">
             <section className="space-y-md rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm">
+              {complaint.rejectionReason && (
+                <div className="rounded-[0.5rem] border border-red-200 bg-red-50 p-md">
+                  <p className="text-label-md uppercase text-red-700">Rejection reason</p>
+                  <p className="mt-xs whitespace-pre-line text-body-md leading-7 text-red-800">
+                    {complaint.rejectionReason}
+                  </p>
+                </div>
+              )}
               <div>
                 <p className="text-label-md uppercase text-on-surface-variant">Title</p>
                 <h2 className="mt-xxs text-h2 text-on-surface">{complaint.title}</h2>
@@ -332,30 +340,7 @@ export default function CustomerComplaintDetailPage() {
               <section className="rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm">
                 <h2 className="text-h3 text-on-surface">Evidence files</h2>
 
-                <div className="mt-md space-y-xs">
-                  {complaint.evidence?.length ? (
-                    complaint.evidence.map((file) => (
-                      <div
-                        key={file.name}
-                        className="flex items-center gap-sm rounded-[0.5rem] border border-outline-variant bg-slate-50 px-sm py-xs"
-                      >
-                        <span className="material-symbols-outlined text-[20px] text-primary">
-                          attach_file
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-body-sm text-on-surface">{file.name}</p>
-                          <p className="text-body-sm text-on-surface-variant">
-                            {file.type || "Uploaded file"}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-body-sm text-on-surface-variant">
-                      No evidence files were uploaded.
-                    </p>
-                  )}
-                </div>
+                <div className="mt-md"><EvidenceFileList files={complaint.evidence} /></div>
               </section>
 
             </aside>

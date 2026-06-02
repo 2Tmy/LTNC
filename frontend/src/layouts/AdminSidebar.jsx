@@ -4,7 +4,7 @@ import { clearDemoAuth } from "../utils/demoAuth.js";
 
 const processSteps = [
   { label: "Receive", icon: "move_to_inbox", to: ROUTE_PATHS.adminReceive, step: 1 },
-  { label: "Review", icon: "fact_check", to: ROUTE_PATHS.adminReview, step: 2 },
+  { label: "Validate", icon: "fact_check", to: ROUTE_PATHS.adminReview, step: 2 },
   { label: "Process", icon: "build_circle", to: ROUTE_PATHS.adminProcess, step: 3 },
   { label: "Response", icon: "mark_email_read", to: ROUTE_PATHS.adminResponse, step: 4 },
 ];
