@@ -90,7 +90,7 @@ export default function XuLyPage() {
                     </span>
                     <p className="text-sm text-slate-600">{c.assignedToName}</p>
                     <Link
-                      to={ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", c.slug)}
+                      to={`${ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", c.slug)}?from=process`}
                       className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700"
                     >
                       <span className="material-symbols-outlined text-[15px]">open_in_new</span>

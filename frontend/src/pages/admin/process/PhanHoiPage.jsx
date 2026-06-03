@@ -77,7 +77,7 @@ export default function PhanHoiPage() {
                       {c.resolution || "No resolution text yet."}
                     </p>
                     <Link
-                      to={ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", c.slug)}
+                      to={`${ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", c.slug)}?from=response`}
                       className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-green-700"
                     >
                       <span className="material-symbols-outlined text-[15px]">open_in_new</span>
