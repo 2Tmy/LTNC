@@ -6,6 +6,13 @@ import AdminTopBar from "../../../layouts/AdminTopBar.jsx";
 import { getAllComplaints } from "../../../services/complaintService.js";
 import { ROUTE_PATHS } from "../../../routes/routePaths.js";
 
+const priorityStyles = {
+  Low: "bg-slate-100 text-slate-600",
+  Medium: "bg-blue-50 text-blue-700",
+  High: "bg-orange-50 text-orange-700",
+  Urgent: "bg-red-50 text-red-700",
+};
+
 export default function XemXetPage() {
   const user = useCurrentUser();
   const [complaints, setComplaints] = useState([]);
@@ -53,10 +60,11 @@ export default function XemXetPage() {
             </div>
           ) : (
             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-              <div className="hidden grid-cols-[1fr_1fr_0.6fr_0.9fr_auto] gap-4 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 md:grid">
+              <div className="hidden grid-cols-[1fr_1fr_0.6fr_0.6fr_0.9fr_auto] gap-4 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 md:grid">
                 <span>Code / Title</span>
                 <span>Customer</span>
                 <span>Category</span>
+                <span>Priority</span>
                 <span>Submitted</span>
                 <span />
               </div>
@@ -64,7 +72,7 @@ export default function XemXetPage() {
                 {complaints.map((c) => (
                   <div
                     key={c.apiId}
-                    className="grid grid-cols-1 items-center gap-3 px-4 py-4 md:grid-cols-[1fr_1fr_0.6fr_0.9fr_auto] md:gap-4"
+                    className="grid grid-cols-1 items-center gap-3 px-4 py-4 md:grid-cols-[1fr_1fr_0.6fr_0.6fr_0.9fr_auto] md:gap-4"
                   >
                     <div>
                       <p className="text-xs text-slate-400">{c.id}</p>
@@ -75,9 +83,14 @@ export default function XemXetPage() {
                       <p className="text-xs text-slate-400">{c.email}</p>
                     </div>
                     <p className="text-sm text-slate-600">{c.category}</p>
+                    <span
+                      className={`inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-semibold ${priorityStyles[c.priority] || "bg-slate-100 text-slate-600"}`}
+                    >
+                      {c.priority}
+                    </span>
                     <p className="text-xs text-slate-400">{c.submittedAt}</p>
                     <Link
-                      to={`${ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", c.slug)}?from=validate`}
+                      to={ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", c.slug)}
                       className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700"
                     >
                       <span className="material-symbols-outlined text-[15px]">open_in_new</span>

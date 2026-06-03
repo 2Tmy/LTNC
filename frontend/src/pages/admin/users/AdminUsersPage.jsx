@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useCurrentUser } from "../../../hooks/useCurrentUser.js";
 import AdminSidebar from "../../../layouts/AdminSidebar.jsx";
 import AdminTopBar from "../../../layouts/AdminTopBar.jsx";
-import { getAdminUsers, deleteAdminUser } from "../../../services/authService.js";
+import { getAdminUsers } from "../../../services/authService.js";
 
 const formatDate = (value) => {
   if (!value) return "Not available";
@@ -19,36 +19,25 @@ export default function AdminUsersPage() {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [deletingId, setDeletingId] = useState(null);
 
-  const loadUsers = async () => {
-    setLoading(true);
-    setLoadError("");
-    try {
-      const response = await getAdminUsers();
-      setAccounts(response.data.data);
-    } catch (error) {
-      console.error("Load users error:", error);
-      setLoadError(error.response?.data?.message || "Unable to load registered users.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const loadUsers = async () => {
+      setLoading(true);
+      setLoadError("");
 
-  useEffect(() => { loadUsers(); }, []);
+      try {
+        const response = await getAdminUsers();
+        setAccounts(response.data.data);
+      } catch (error) {
+        console.error("Load users error:", error);
+        setLoadError(error.response?.data?.message || "Unable to load registered users.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleDelete = async (account) => {
-    if (!window.confirm(`Delete user "${account.name}" (${account.email})?\n\nThis will also delete all their complaints and cannot be undone.`)) return;
-    setDeletingId(account.id);
-    try {
-      await deleteAdminUser(account.id);
-      await loadUsers();
-    } catch (error) {
-      alert(error.response?.data?.message || "Unable to delete user.");
-    } finally {
-      setDeletingId(null);
-    }
-  };
+    loadUsers();
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-surface text-on-background">
@@ -112,15 +101,7 @@ export default function AdminUsersPage() {
                           </span>
                         </td>
                         <td className="px-lg py-md text-right">
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(account)}
-                            disabled={deletingId === account.id}
-                            className="inline-flex items-center gap-xs rounded-[0.5rem] border border-red-200 bg-red-50 px-sm py-xs text-body-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">delete</span>
-                            {deletingId === account.id ? "Deleting..." : "Delete"}
-                          </button>
+                          <span className="text-body-sm text-secondary">Read-only</span>
                         </td>
                       </tr>
                     ))

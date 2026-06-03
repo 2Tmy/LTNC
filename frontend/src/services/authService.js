@@ -12,9 +12,6 @@ export const getMe = () =>
 export const getAdminUsers = () =>
   apiClient.get("/api/admin/users");
 
-export const deleteAdminUser = (id) =>
-  apiClient.delete(`/api/admin/users/${id}`);
-
 export const logout = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("demoRole");

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useCurrentUser } from "../../hooks/useCurrentUser.js";
 import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
@@ -20,8 +20,7 @@ export default function MyComplaintsPage() {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [searchParams] = useSearchParams();
-  const [filter, setFilter] = useState(searchParams.get("status") || "all");
+  const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     const fetchData = async () => {

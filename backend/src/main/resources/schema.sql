@@ -1,7 +1,6 @@
 -- Development schema. The current application configuration reloads this file
 -- and data.sql on startup, so tables are intentionally recreated.
 
-DROP TABLE IF EXISTS complaint_feedback CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS complaint_comments CASCADE;
 DROP TABLE IF EXISTS complaint_attachments CASCADE;
@@ -202,16 +201,3 @@ CREATE TABLE notifications (
 
 CREATE INDEX idx_notifications_user ON notifications (user_id, created_at);
 CREATE INDEX idx_notifications_user_unread ON notifications (user_id, is_read);
-
-CREATE TABLE complaint_feedback (
-    id           BIGSERIAL NOT NULL,
-    complaint_id BIGINT    NOT NULL,
-    rating       INTEGER   NOT NULL CHECK (rating BETWEEN 1 AND 5),
-    comment      TEXT,
-    submitted_at TIMESTAMP NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT pk_complaint_feedback PRIMARY KEY (id),
-    CONSTRAINT uk_complaint_feedback_complaint UNIQUE (complaint_id),
-    CONSTRAINT fk_complaint_feedback_complaint
-        FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE
-);

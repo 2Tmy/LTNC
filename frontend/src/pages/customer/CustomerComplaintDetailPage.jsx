@@ -4,7 +4,7 @@ import { useCurrentUser } from "../../hooks/useCurrentUser.js";
 import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
 import { ROUTE_PATHS } from "../../routes/routePaths.js";
-import { getComplaintByCode, submitFeedback, getFeedback } from "../../services/complaintService.js";
+import { getComplaintByCode } from "../../services/complaintService.js";
 import EvidenceFileList from "../../components/complaint/EvidenceFileList.jsx";
 
 const statusStyles = {
@@ -24,23 +24,6 @@ const getStatusIndex = (status) => {
   return index === -1 ? 0 : index;
 };
 
-function StarRating({ value, onChange }) {
-  return (
-    <div className="flex gap-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          onClick={() => onChange(star)}
-          className={`text-[28px] transition ${star <= value ? "text-yellow-400" : "text-slate-300 hover:text-yellow-300"}`}
-        >
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export default function CustomerComplaintDetailPage() {
   const user = useCurrentUser();
   const { complaintId } = useParams();
@@ -49,28 +32,14 @@ export default function CustomerComplaintDetailPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
-  const [feedback, setFeedback] = useState(null);
-  const [feedbackRating, setFeedbackRating] = useState(0);
-  const [feedbackComment, setFeedbackComment] = useState("");
-  const [submittingFeedback, setSubmittingFeedback] = useState(false);
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
-
   useEffect(() => {
     const fetchComplaint = async () => {
       setLoading(true);
       setLoadError("");
+
       try {
         const data = await getComplaintByCode(complaintId);
         setComplaint(data);
-        if (data.status === "Resolved") {
-          const fb = await getFeedback(complaintId).catch(() => null);
-          if (fb && fb.rating) {
-            setFeedback(fb);
-            setFeedbackRating(fb.rating);
-            setFeedbackComment(fb.comment || "");
-            setFeedbackSubmitted(true);
-          }
-        }
       } catch (error) {
         setComplaint(null);
         setLoadError(
@@ -82,22 +51,10 @@ export default function CustomerComplaintDetailPage() {
       }
     };
 
-    if (complaintId) fetchComplaint();
-  }, [complaintId]);
-
-  const handleSubmitFeedback = async () => {
-    if (feedbackRating === 0) return;
-    setSubmittingFeedback(true);
-    try {
-      await submitFeedback(complaintId, { rating: feedbackRating, comment: feedbackComment });
-      setFeedbackSubmitted(true);
-      setFeedback({ rating: feedbackRating, comment: feedbackComment });
-    } catch (e) {
-      alert(e.response?.data?.message || "Unable to submit feedback.");
-    } finally {
-      setSubmittingFeedback(false);
+    if (complaintId) {
+      fetchComplaint();
     }
-  };
+  }, [complaintId]);
 
   if (loading) {
     return (
@@ -351,24 +308,12 @@ export default function CustomerComplaintDetailPage() {
                 </p>
               </div>
 
-              {complaint.status === "Resolved" && complaint.resolution ? (
-                <div className="rounded-[0.75rem] border border-green-200 bg-green-50 p-md">
-                  <div className="flex items-center gap-xs">
-                    <span className="material-symbols-outlined text-[20px] text-green-600">task_alt</span>
-                    <p className="text-label-md font-semibold uppercase text-green-700">Resolution from admin</p>
-                  </div>
-                  <p className="mt-xs whitespace-pre-line text-body-md leading-7 text-green-900">
-                    {complaint.resolution}
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-label-md uppercase text-on-surface-variant">Resolution</p>
-                  <p className="mt-xs whitespace-pre-line rounded-[0.5rem] bg-slate-50 p-md text-body-md leading-7 text-on-surface-variant">
-                    {complaint.resolution || "No resolution has been proposed yet."}
-                  </p>
-                </div>
-              )}
+              <div>
+                <p className="text-label-md uppercase text-on-surface-variant">Resolution</p>
+                <p className="mt-xs whitespace-pre-line rounded-[0.5rem] bg-slate-50 p-md text-body-md leading-7 text-on-surface-variant">
+                  {complaint.resolution || "No resolution has been proposed yet."}
+                </p>
+              </div>
             </section>
 
             <aside className="space-y-md">
@@ -394,64 +339,10 @@ export default function CustomerComplaintDetailPage() {
 
               <section className="rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm">
                 <h2 className="text-h3 text-on-surface">Evidence files</h2>
+
                 <div className="mt-md"><EvidenceFileList files={complaint.evidence} /></div>
               </section>
 
-              {complaint.status === "Resolved" && (
-                <section className="rounded-[0.75rem] border border-green-200 bg-white p-lg shadow-sm">
-                  <h2 className="text-h3 text-on-surface">Your feedback</h2>
-                  <p className="mt-xxs text-body-sm text-on-surface-variant">
-                    How satisfied are you with the resolution?
-                  </p>
-
-                  {feedbackSubmitted ? (
-                    <div className="mt-md space-y-sm">
-                      <div className="flex gap-0.5">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <span
-                            key={s}
-                            className={`material-symbols-outlined text-[24px] ${s <= feedbackRating ? "text-yellow-400" : "text-slate-200"}`}
-                            style={{ fontVariationSettings: "'FILL' 1" }}
-                          >
-                            star
-                          </span>
-                        ))}
-                      </div>
-                      {feedback?.comment && (
-                        <p className="rounded-[0.5rem] bg-slate-50 p-sm text-body-sm text-on-surface-variant">
-                          {feedback.comment}
-                        </p>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => setFeedbackSubmitted(false)}
-                        className="text-body-sm text-primary hover:underline"
-                      >
-                        Edit feedback
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="mt-md space-y-sm">
-                      <StarRating value={feedbackRating} onChange={setFeedbackRating} />
-                      <textarea
-                        value={feedbackComment}
-                        onChange={(e) => setFeedbackComment(e.target.value)}
-                        placeholder="Additional comments (optional)"
-                        rows={3}
-                        className="w-full rounded-[0.5rem] border border-outline-variant p-sm text-body-sm text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      />
-                      <button
-                        type="button"
-                        disabled={feedbackRating === 0 || submittingFeedback}
-                        onClick={handleSubmitFeedback}
-                        className="w-full rounded-[0.5rem] bg-primary py-sm text-button text-on-primary transition hover:bg-primary-container disabled:opacity-40"
-                      >
-                        {submittingFeedback ? "Submitting..." : "Submit feedback"}
-                      </button>
-                    </div>
-                  )}
-                </section>
-              )}
             </aside>
           </div>
         </div>
