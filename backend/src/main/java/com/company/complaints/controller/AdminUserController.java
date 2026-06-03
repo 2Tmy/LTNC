@@ -4,9 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +47,22 @@ public class AdminUserController {
                 "success", true,
                 "message", "Users retrieved successfully",
                 "data", users
+        ));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        int rows = jdbcTemplate.update("DELETE FROM users WHERE id = ?", id);
+        if (rows == 0) {
+            return ResponseEntity.status(404).body(Map.of(
+                    "success", false,
+                    "message", "User not found"
+            ));
+        }
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "User deleted successfully"
         ));
     }
 }

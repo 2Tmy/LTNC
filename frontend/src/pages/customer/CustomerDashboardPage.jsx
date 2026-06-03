@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCurrentUser } from "../../hooks/useCurrentUser.js";
 import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
@@ -59,16 +59,10 @@ export default function CustomerDashboardPage() {
 
   const stats = useMemo(() => {
     const total = complaints.length;
-
     const pending = complaints.filter((item) => item.status === "Pending").length;
-
-    const inProgress = complaints.filter(
-      (item) => ACTIVE_STATUSES.has(item.status) && item.status !== "Pending"
-    ).length;
-
     const resolved = complaints.filter((item) => RESOLVED_STATUSES.has(item.status)).length;
-
-    return { total, pending, inProgress, resolved };
+    const rejected = complaints.filter((item) => item.status === "Rejected").length;
+    return { total, pending, resolved, rejected };
   }, [complaints]);
 
   return (
@@ -97,25 +91,21 @@ export default function CustomerDashboardPage() {
           </div>
 
           <section className="grid grid-cols-1 gap-md md:grid-cols-4">
-            <div className="rounded-[0.75rem] border border-outline-variant bg-white p-md shadow-sm">
-              <p className="text-label-md uppercase text-on-surface-variant">Total</p>
-              <p className="mt-xs text-h1 text-on-surface">{stats.total}</p>
-            </div>
-
-            <div className="rounded-[0.75rem] border border-outline-variant bg-white p-md shadow-sm">
-              <p className="text-label-md uppercase text-on-surface-variant">Pending</p>
-              <p className="mt-xs text-h1 text-on-surface">{stats.pending}</p>
-            </div>
-
-            <div className="rounded-[0.75rem] border border-outline-variant bg-white p-md shadow-sm">
-              <p className="text-label-md uppercase text-on-surface-variant">In Progress</p>
-              <p className="mt-xs text-h1 text-on-surface">{stats.inProgress}</p>
-            </div>
-
-            <div className="rounded-[0.75rem] border border-outline-variant bg-white p-md shadow-sm">
-              <p className="text-label-md uppercase text-on-surface-variant">Resolved</p>
-              <p className="mt-xs text-h1 text-on-surface">{stats.resolved}</p>
-            </div>
+            {[
+              { label: "Total Complaints", value: stats.total, to: ROUTE_PATHS.myComplaints },
+              { label: "Pending", value: stats.pending, to: `${ROUTE_PATHS.myComplaints}?status=Pending` },
+              { label: "Resolved", value: stats.resolved, to: `${ROUTE_PATHS.myComplaints}?status=Resolved` },
+              { label: "Rejected", value: stats.rejected, to: `${ROUTE_PATHS.myComplaints}?status=Rejected` },
+            ].map(({ label, value, to }) => (
+              <Link
+                key={label}
+                to={to}
+                className="rounded-[0.75rem] border border-outline-variant bg-white p-md shadow-sm transition hover:border-primary hover:shadow-md"
+              >
+                <p className="text-label-md uppercase text-on-surface-variant">{label}</p>
+                <p className="mt-xs text-h1 text-on-surface">{value}</p>
+              </Link>
+            ))}
           </section>
 
           <section className="rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm">

@@ -258,4 +258,14 @@ export const getMonthlyComplaintVolume = async () => {
   return response.data.data;
 };
 
+export const submitFeedback = async (complaintCode, payload) => {
+  const response = await apiClient.post(`/api/complaints/${complaintCode}/feedback`, payload);
+  return response.data;
+};
+
+export const getFeedback = async (complaintCode) => {
+  const response = await apiClient.get(`/api/complaints/${complaintCode}/feedback`);
+  return response.data.data;
+};
+
 export const getComplaints = getAllComplaints;
