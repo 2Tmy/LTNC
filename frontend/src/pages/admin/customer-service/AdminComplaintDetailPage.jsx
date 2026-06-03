@@ -10,6 +10,7 @@ import {
   rejectComplaint,
   proposeResolution,
   sendComplaintResponse,
+  getFeedback,
 } from "../../../services/complaintService.js";
 import { ROUTE_PATHS } from "../../../routes/routePaths.js";
 
@@ -72,6 +73,7 @@ export default function AdminComplaintDetailPage() {
   const [complaint,  setComplaint]  = useState(null);
   const [loading,    setLoading]    = useState(true);
   const [loadError,  setLoadError]  = useState("");
+  const [feedback,   setFeedback]   = useState(null);
 
   const [checklist,          setChecklist]          = useState(emptyChecklist);
   const [validationPriority, setValidationPriority] = useState("MEDIUM");
@@ -85,6 +87,10 @@ export default function AdminComplaintDetailPage() {
     try {
       const data = await getComplaintByCode(complaintId);
       setComplaint(data);
+      if (data.rawStatus === "RESOLVED") {
+        const fb = await getFeedback(data.complaintCode).catch(() => null);
+        setFeedback(fb);
+      }
       if (data.rawStatus === "INVESTIGATING" || data.rawStatus === "RESOLVING") {
         setInvForm({
           investigationSummary: data.investigationSummary || "",
@@ -348,6 +354,46 @@ export default function AdminComplaintDetailPage() {
                 <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Evidence files</h2>
                 <EvidenceFileList files={complaint.evidence} />
               </div>
+
+              {/* Customer feedback — only for resolved complaints */}
+              {complaint.rawStatus === "RESOLVED" && (
+                <div className={`rounded-2xl border-2 p-5 shadow-sm ${feedback ? "border-yellow-300 bg-yellow-50" : "border-slate-200 bg-white"}`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`material-symbols-outlined text-[20px] ${feedback ? "text-yellow-500" : "text-slate-300"}`}
+                      style={{ fontVariationSettings: "'FILL' 1" }}>
+                      star
+                    </span>
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500">Customer feedback</h2>
+                    {feedback && (
+                      <span className="ml-auto rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-bold text-yellow-900">NEW</span>
+                    )}
+                  </div>
+
+                  {feedback ? (
+                    <div className="mt-3 space-y-2">
+                      <div className="flex gap-0.5">
+                        {[1,2,3,4,5].map(s => (
+                          <span key={s} className={`material-symbols-outlined text-[22px] ${s <= feedback.rating ? "text-yellow-400" : "text-slate-200"}`}
+                            style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                        ))}
+                        <span className="ml-2 text-sm font-bold text-slate-700">{feedback.rating}/5</span>
+                      </div>
+                      {feedback.comment && (
+                        <p className="rounded-xl bg-white p-3 text-sm text-slate-700 shadow-sm">
+                          "{feedback.comment}"
+                        </p>
+                      )}
+                      {feedback.submittedAt && (
+                        <p className="text-[10px] text-slate-400">
+                          Submitted {new Date(feedback.submittedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs text-slate-400">No feedback submitted yet.</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

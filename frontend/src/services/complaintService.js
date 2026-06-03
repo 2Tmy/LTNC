@@ -258,14 +258,22 @@ export const getMonthlyComplaintVolume = async () => {
   return response.data.data;
 };
 
+const FEEDBACK_KEY = "complaint_feedbacks";
+
 export const submitFeedback = async (complaintCode, payload) => {
-  const response = await apiClient.post(`/api/complaints/${complaintCode}/feedback`, payload);
-  return response.data;
+  const all = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || "{}");
+  all[complaintCode] = { ...payload, submittedAt: new Date().toISOString() };
+  localStorage.setItem(FEEDBACK_KEY, JSON.stringify(all));
+  return { success: true };
 };
 
 export const getFeedback = async (complaintCode) => {
-  const response = await apiClient.get(`/api/complaints/${complaintCode}/feedback`);
-  return response.data.data;
+  const all = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || "{}");
+  return all[complaintCode] || null;
+};
+
+export const getAllFeedbacks = () => {
+  return JSON.parse(localStorage.getItem(FEEDBACK_KEY) || "{}");
 };
 
 export const getComplaints = getAllComplaints;
