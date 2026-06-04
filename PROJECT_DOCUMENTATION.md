@@ -313,9 +313,9 @@ spring.sql.init.mode=always
 ```
 
 Seed data includes:
-- 2 admin accounts.
-- 28 customer accounts.
-- 50 demo complaints distributed across `PENDING`, `VALIDATING`, `RESOLVING`, and `RESOLVED`.
+- 1 admin account.
+- 100 customer accounts.
+- 100 demo complaints distributed across `PENDING`, `VALIDATING`, `RESOLVING`, and `RESOLVED`.
 - Validation records for validated and rejected demo complaints.
 
 All seed accounts use:
@@ -329,8 +329,7 @@ Seed accounts:
 | Email | Role |
 |-------|------|
 | `admin@test.com` | ADMIN |
-| `agent@test.com` | ADMIN |
-| `customer01@test.com` through `customer28@test.com` | CUSTOMER |
+| `customer001@gmail.com` through `customer100@gmail.com` | CUSTOMER |
 
 Priority in seed:
 - `PENDING` and `VALIDATING` complaints have no priority.
@@ -491,7 +490,7 @@ Priority:
    or
 
    ```text
-   customer01@test.com / password123
+   customer001@gmail.com / password123
    ```
 
 9. Validate the app:

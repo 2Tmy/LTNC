@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCurrentUser } from "../../../hooks/useCurrentUser.js";
 import AdminSidebar from "../../../layouts/AdminSidebar.jsx";
@@ -11,6 +11,7 @@ export default function XemXetPage() {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -26,18 +27,54 @@ export default function XemXetPage() {
     })();
   }, []);
 
+  const filteredComplaints = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+    if (!keyword) return complaints;
+
+    return complaints.filter((complaint) =>
+      [
+        complaint.id,
+        complaint.complaintCode,
+        complaint.title,
+        complaint.customer,
+        complaint.email,
+        complaint.phone,
+        complaint.orderId,
+        complaint.category,
+        complaint.status,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword))
+    );
+  }, [complaints, searchTerm]);
+
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900">
       <AdminSidebar user={user} />
       <main className="min-w-0 flex-1">
         <AdminTopBar user={user} />
         <div className="mx-auto w-full max-w-6xl space-y-6 p-6">
-          <header>
-            <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">Step 2</p>
-            <h1 className="text-2xl font-bold">Validate complaints</h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Open each complaint to review details and complete the validation checklist.
-            </p>
+          <header className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">Step 2</p>
+              <h1 className="text-2xl font-bold">Validate complaints</h1>
+              <p className="mt-1 text-sm text-slate-500">
+                Open each complaint to review details and complete the validation checklist.
+              </p>
+            </div>
+
+            <label className="relative w-full sm:w-[380px]">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[19px] text-slate-400">
+                search
+              </span>
+              <input
+                className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-3 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search customer, phone, complaint ID..."
+              />
+            </label>
           </header>
 
           {error && (
@@ -46,10 +83,14 @@ export default function XemXetPage() {
 
           {loading ? (
             <p className="text-sm text-slate-500">Loading...</p>
-          ) : complaints.length === 0 ? (
+          ) : filteredComplaints.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-200 bg-white p-10 text-center">
               <span className="material-symbols-outlined text-[40px] text-slate-300">fact_check</span>
-              <p className="mt-2 text-sm text-slate-500">No complaints awaiting validation.</p>
+              <p className="mt-2 text-sm text-slate-500">
+                {searchTerm.trim()
+                  ? "No validating complaints match your search."
+                  : "No complaints awaiting validation."}
+              </p>
             </div>
           ) : (
             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -61,7 +102,7 @@ export default function XemXetPage() {
                 <span />
               </div>
               <div className="divide-y divide-slate-100">
-                {complaints.map((c) => (
+                {filteredComplaints.map((c) => (
                   <div
                     key={c.apiId}
                     className="grid grid-cols-1 items-center gap-3 px-4 py-4 md:grid-cols-[1fr_1fr_0.7fr_0.9fr_auto] md:gap-4"

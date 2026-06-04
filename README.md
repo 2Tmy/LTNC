@@ -153,10 +153,9 @@ Normal startup preserves existing data because `spring.sql.init.mode=never` in t
 | Email pattern | Role | Name pattern |
 |---------------|------|--------------|
 | admin@test.com | ADMIN | Admin User |
-| agent@test.com | ADMIN | Support Agent |
-| customer01@test.com through customer28@test.com | CUSTOMER | Customer 01 through Customer 28 |
+| customer001@gmail.com through customer100@gmail.com | CUSTOMER | Customer 001 through Customer 100 |
 
-The seed inserts 50 demo complaints assigned across the generated customers and covering the four complaint statuses:
+The seed inserts 100 demo complaints assigned across the generated customers and covering the four complaint statuses:
 `PENDING`, `VALIDATING`, `RESOLVING`, `RESOLVED`.
 
 Rejected demo complaints are stored as `RESOLVED` complaints with `validation_status = 'INVALID'` and a rejection reason.
@@ -399,7 +398,7 @@ Full interactive documentation is available at `http://localhost:8080/swagger-ui
 **Login request:**
 ```json
 {
-  "email": "customer01@test.com",
+  "email": "customer001@gmail.com",
   "password": "password123"
 }
 ```
@@ -413,7 +412,7 @@ Full interactive documentation is available at `http://localhost:8080/swagger-ui
     "token": "eyJ...",
     "userId": 1,
     "name": "Nguyen Van An",
-    "email": "customer01@test.com",
+    "email": "customer001@gmail.com",
     "role": "CUSTOMER"
   }
 }

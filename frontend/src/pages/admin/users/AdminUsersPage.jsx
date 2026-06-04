@@ -23,7 +23,18 @@ const roleStyles = {
 
 const PAGE_SIZE = 10;
 
-function UserTable({ title, description, users, loading, loadError, page, onPageChange, onSelect }) {
+function UserTable({
+  title,
+  description,
+  users,
+  loading,
+  loadError,
+  page,
+  onPageChange,
+  onSelect,
+  searchTerm,
+  onSearchChange,
+}) {
   const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const startIndex = (currentPage - 1) * PAGE_SIZE;
@@ -36,9 +47,23 @@ function UserTable({ title, description, users, loading, loadError, page, onPage
           <h2 className="text-h2 text-on-surface">{title}</h2>
           <p className="mt-xxs text-body-sm text-secondary">{description}</p>
         </div>
-        <span className="rounded-full bg-slate-100 px-sm py-xxs text-body-sm font-semibold text-secondary">
-          {users.length} accounts
-        </span>
+        <div className="flex w-full flex-col gap-sm sm:w-auto sm:flex-row sm:items-center">
+          <label className="relative w-full sm:w-[320px]">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[19px] text-slate-400">
+              search
+            </span>
+            <input
+              className="h-10 w-full rounded-[0.5rem] border border-outline-variant bg-white pl-10 pr-3 text-body-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+              type="search"
+              value={searchTerm}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder="Search name, email, phone..."
+            />
+          </label>
+          <span className="rounded-full bg-slate-100 px-sm py-xxs text-body-sm font-semibold text-secondary">
+            {users.length} accounts
+          </span>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -207,6 +232,8 @@ export default function AdminUsersPage() {
   const [loadError, setLoadError] = useState("");
   const [adminPage, setAdminPage] = useState(1);
   const [customerPage, setCustomerPage] = useState(1);
+  const [adminSearch, setAdminSearch] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -229,13 +256,25 @@ export default function AdminUsersPage() {
     loadUsers();
   }, []);
 
-  const groupedUsers = useMemo(
-    () => ({
-      admins: accounts.filter((account) => account.role === "ADMIN"),
-      customers: accounts.filter((account) => account.role === "CUSTOMER"),
-    }),
-    [accounts]
-  );
+  const groupedUsers = useMemo(() => {
+    const matches = (account, keyword) =>
+      !keyword ||
+      [account.id, account.name, account.email, account.phone, account.role, account.status]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword));
+
+    const adminKeyword = adminSearch.trim().toLowerCase();
+    const customerKeyword = customerSearch.trim().toLowerCase();
+
+    return {
+      admins: accounts
+        .filter((account) => account.role === "ADMIN")
+        .filter((account) => matches(account, adminKeyword)),
+      customers: accounts
+        .filter((account) => account.role === "CUSTOMER")
+        .filter((account) => matches(account, customerKeyword)),
+    };
+  }, [accounts, adminSearch, customerSearch]);
 
   return (
     <div className="flex min-h-screen bg-surface text-on-background">
@@ -260,6 +299,11 @@ export default function AdminUsersPage() {
             loadError={loadError}
             page={adminPage}
             onPageChange={setAdminPage}
+            searchTerm={adminSearch}
+            onSearchChange={(value) => {
+              setAdminSearch(value);
+              setAdminPage(1);
+            }}
             onSelect={setSelectedUser}
           />
 
@@ -271,6 +315,11 @@ export default function AdminUsersPage() {
             loadError={loadError}
             page={customerPage}
             onPageChange={setCustomerPage}
+            searchTerm={customerSearch}
+            onSearchChange={(value) => {
+              setCustomerSearch(value);
+              setCustomerPage(1);
+            }}
             onSelect={setSelectedUser}
           />
         </div>

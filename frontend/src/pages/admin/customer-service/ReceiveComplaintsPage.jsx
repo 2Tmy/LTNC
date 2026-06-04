@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCurrentUser } from "../../../hooks/useCurrentUser.js";
 import AdminSidebar from "../../../layouts/AdminSidebar.jsx";
 import AdminTopBar from "../../../layouts/AdminTopBar.jsx";
@@ -11,6 +11,7 @@ export default function ReceiveComplaintsPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [receivingId, setReceivingId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const loadComplaints = async () => {
     setLoading(true);
@@ -33,6 +34,28 @@ export default function ReceiveComplaintsPage() {
   useEffect(() => {
     loadComplaints();
   }, []);
+
+  const filteredComplaints = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+    if (!keyword) return complaints;
+
+    return complaints.filter((complaint) =>
+      [
+        complaint.id,
+        complaint.complaintCode,
+        complaint.title,
+        complaint.customer,
+        complaint.email,
+        complaint.phone,
+        complaint.orderId,
+        complaint.category,
+        complaint.status,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword))
+    );
+  }, [complaints, searchTerm]);
+
   const handleReceive = async (complaintId) => {
     setReceivingId(complaintId);
 
@@ -83,9 +106,23 @@ export default function ReceiveComplaintsPage() {
                 </p>
               </div>
 
-              <span className="rounded-full bg-orange-50 px-sm py-xxs text-label-md text-orange-700">
-                {complaints.length} pending
-              </span>
+              <div className="flex w-full flex-col gap-sm sm:w-auto sm:flex-row sm:items-center">
+                <label className="relative w-full sm:w-[360px]">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[19px] text-slate-400">
+                    search
+                  </span>
+                  <input
+                    className="h-10 w-full rounded-[0.5rem] border border-outline-variant bg-white pl-10 pr-3 text-body-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                    type="search"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder="Search customer, phone, complaint ID..."
+                  />
+                </label>
+                <span className="rounded-full bg-orange-50 px-sm py-xxs text-label-md text-orange-700">
+                  {filteredComplaints.length} of {complaints.length} pending
+                </span>
+              </div>
             </div>
 
             {loading ? (
@@ -103,14 +140,16 @@ export default function ReceiveComplaintsPage() {
               <div className="mt-lg rounded-[0.5rem] border border-error/30 bg-red-50 p-md text-body-md text-error">
                 {loadError}
               </div>
-            ) : complaints.length === 0 ? (
+            ) : filteredComplaints.length === 0 ? (
               <div className="mt-lg rounded-[0.5rem] border border-dashed border-outline-variant bg-slate-50 p-xl text-center">
                 <span className="material-symbols-outlined text-[44px] text-on-surface-variant">
                   inventory_2
                 </span>
                 <h3 className="mt-sm text-h3 text-on-surface">No submitted complaints</h3>
                 <p className="mt-xs text-body-md text-on-surface-variant">
-                  There are no pending complaints waiting for receipt.
+                  {searchTerm.trim()
+                    ? "No submitted complaints match your search."
+                    : "There are no pending complaints waiting for receipt."}
                 </p>
               </div>
             ) : (
@@ -123,7 +162,7 @@ export default function ReceiveComplaintsPage() {
                 </div>
 
                 <div className="divide-y divide-outline-variant">
-                  {complaints.map((complaint) => (
+                  {filteredComplaints.map((complaint) => (
                     <div
                       key={complaint.slug}
                       className="grid grid-cols-1 gap-sm px-md py-md md:grid-cols-[1fr_1fr_0.8fr_0.8fr] md:items-center md:gap-md"
