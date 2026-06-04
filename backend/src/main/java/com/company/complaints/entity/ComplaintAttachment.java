@@ -42,7 +42,7 @@ public class ComplaintAttachment {
     @Column(name = "is_evidence", nullable = false)
     private boolean isEvidence = true;
 
-    // true = uploaded at complaint creation; false = uploaded after NEED_MORE_INFO
+    // true = uploaded at complaint creation; false = uploaded during later follow-up.
     @Builder.Default
     @Column(name = "is_initial_upload", nullable = false)
     private boolean isInitialUpload = false;

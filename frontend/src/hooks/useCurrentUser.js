@@ -16,12 +16,14 @@ const formatMemberSince = (createdAt) => {
 export function useCurrentUser() {
   const savedName = localStorage.getItem("demoName") || "User";
   const savedEmail = localStorage.getItem("demoEmail") || "";
+  const savedPhone = localStorage.getItem("demoPhone") || "";
   const savedRole = localStorage.getItem("demoBackendRole") || null;
   const savedCreatedAt = localStorage.getItem("demoCreatedAt") || "";
 
   const [user, setUser] = useState({
     name: savedName,
     email: savedEmail,
+    phone: savedPhone,
     firstName: savedName.split(" ")[0],
     userId: null,
     role: savedRole,
@@ -33,9 +35,10 @@ export function useCurrentUser() {
   useEffect(() => {
     getMe()
       .then((res) => {
-        const { name, email, userId, role, createdAt } = res.data.data;
+        const { name, email, phone, userId, role, createdAt } = res.data.data;
         localStorage.setItem("demoName", name);
         localStorage.setItem("demoEmail", email);
+        localStorage.setItem("demoPhone", phone || "");
         localStorage.setItem("demoBackendRole", role);
         if (createdAt) {
           localStorage.setItem("demoCreatedAt", createdAt);
@@ -43,6 +46,7 @@ export function useCurrentUser() {
         setUser({
           name,
           email,
+          phone: phone || "",
           firstName: name.split(" ")[0],
           userId,
           role,

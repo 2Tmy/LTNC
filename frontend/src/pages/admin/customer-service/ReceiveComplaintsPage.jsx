@@ -4,13 +4,6 @@ import AdminSidebar from "../../../layouts/AdminSidebar.jsx";
 import AdminTopBar from "../../../layouts/AdminTopBar.jsx";
 import { getSubmittedComplaints, receiveComplaint } from "../../../services/complaintService.js";
 
-const priorityStyles = {
-  Low: "bg-slate-100 text-slate-700",
-  Medium: "bg-blue-50 text-blue-700",
-  High: "bg-orange-50 text-orange-700",
-  Urgent: "bg-red-50 text-red-700",
-};
-
 export default function ReceiveComplaintsPage() {
   const user = useCurrentUser();
 
@@ -122,11 +115,10 @@ export default function ReceiveComplaintsPage() {
               </div>
             ) : (
               <div className="mt-lg overflow-hidden rounded-[0.5rem] border border-outline-variant">
-                <div className="hidden grid-cols-[1fr_1fr_0.8fr_0.8fr_0.8fr] gap-md bg-slate-50 px-md py-sm text-label-md uppercase text-on-surface-variant md:grid">
+                <div className="hidden grid-cols-[1fr_1fr_0.8fr_0.8fr] gap-md bg-slate-50 px-md py-sm text-label-md uppercase text-on-surface-variant md:grid">
                   <span>Code / Title</span>
                   <span>Customer</span>
                   <span>Category</span>
-                  <span>Priority</span>
                   <span className="text-right">Action</span>
                 </div>
 
@@ -134,7 +126,7 @@ export default function ReceiveComplaintsPage() {
                   {complaints.map((complaint) => (
                     <div
                       key={complaint.slug}
-                      className="grid grid-cols-1 gap-sm px-md py-md md:grid-cols-[1fr_1fr_0.8fr_0.8fr_0.8fr] md:items-center md:gap-md"
+                      className="grid grid-cols-1 gap-sm px-md py-md md:grid-cols-[1fr_1fr_0.8fr_0.8fr] md:items-center md:gap-md"
                     >
                       <div>
                         <p className="text-body-sm text-on-surface-variant">{complaint.id}</p>
@@ -152,17 +144,6 @@ export default function ReceiveComplaintsPage() {
                       <p className="text-body-md text-on-surface-variant">
                         {complaint.category}
                       </p>
-
-                      <div>
-                        <span
-                          className={`inline-flex rounded-full px-sm py-xxs text-label-md ${
-                            priorityStyles[complaint.priority] ||
-                            "bg-slate-100 text-slate-700"
-                          }`}
-                        >
-                          {complaint.priority}
-                        </span>
-                      </div>
 
                       <div className="flex justify-start gap-xs md:justify-end">
                         <button

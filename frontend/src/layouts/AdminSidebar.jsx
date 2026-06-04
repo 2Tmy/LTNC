@@ -6,11 +6,12 @@ const processSteps = [
   { label: "Receive", icon: "move_to_inbox", to: ROUTE_PATHS.adminReceive, step: 1 },
   { label: "Validate", icon: "fact_check", to: ROUTE_PATHS.adminReview, step: 2 },
   { label: "Process", icon: "build_circle", to: ROUTE_PATHS.adminProcess, step: 3 },
-  { label: "Response", icon: "mark_email_read", to: ROUTE_PATHS.adminResponse, step: 4 },
+  { label: "Resolved", icon: "mark_email_read", to: ROUTE_PATHS.adminResponse, step: 4 },
 ];
 
 const mainNavItems = [
   { label: "Dashboard", icon: "dashboard", to: ROUTE_PATHS.adminDashboard },
+  { label: "Analysis", icon: "analytics", to: ROUTE_PATHS.adminAnalysis },
   { label: "Users", icon: "groups", to: ROUTE_PATHS.adminUsers },
 ];
 

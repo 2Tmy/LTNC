@@ -1,18 +1,10 @@
 import apiClient from "./apiClient";
 
 const statusMap = {
-  SUBMITTED: "Pending",
-  PENDING_VALIDATION: "Validating",
-  VALIDATED: "Validating",
-  NEED_MORE_INFO: "Validating",
-  IN_REVIEW: "Resolving",
-  INVESTIGATING: "Resolving",
+  PENDING: "Pending",
+  VALIDATING: "Validating",
   RESOLVING: "Resolving",
-  PENDING_APPROVAL: "Resolving",
-  AWAITING_APPROVAL: "Resolving",
   RESOLVED: "Resolved",
-  CLOSED: "Resolved",
-  REJECTED: "Rejected",
 };
 
 export const DISPLAY_STATUS = statusMap;
@@ -20,12 +12,10 @@ export const DISPLAY_STATUS = statusMap;
 export const ACTIVE_STATUSES = new Set([
   "Pending",
   "Validating",
-  "Investigating",
   "Resolving",
 ]);
 
 export const RESOLVED_STATUSES = new Set(["Resolved"]);
-export const CLOSED_STATUSES = new Set(["Resolved", "Rejected"]);
 
 const categoryMap = {
   PRODUCT: "Product",
@@ -41,6 +31,8 @@ const priorityMap = {
   HIGH: "High",
   URGENT: "Urgent",
 };
+
+export const COMPLAINT_SLA_DAYS = 15;
 
 const EXTRA_STORAGE_KEY = "complaintExtras";
 
@@ -87,6 +79,26 @@ const formatDate = (value) => {
   });
 };
 
+const addDays = (value, days) => {
+  if (!value) return null;
+  const date = new Date(value);
+  date.setDate(date.getDate() + days);
+  return date;
+};
+
+const getDaysOpen = (submittedAt, resolvedAt) => {
+  if (!submittedAt) return 0;
+  const start = new Date(submittedAt);
+  const end = resolvedAt ? new Date(resolvedAt) : new Date();
+  const diff = end.getTime() - start.getTime();
+  return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+};
+
+const getHoursToSla = (slaDueAt) => {
+  if (!slaDueAt) return null;
+  return Math.ceil((slaDueAt.getTime() - Date.now()) / (1000 * 60 * 60));
+};
+
 const getInitials = (name) => {
   if (!name) return "CU";
   return name
@@ -101,6 +113,13 @@ export const toComplaintUiModel = (c) => {
   const extras = getExtras(c.id);
   const displayCode = c.complaintCode || `CMP-${String(c.id || "").padStart(4, "0")}`;
   const status = statusMap[c.status] || c.status || "Pending";
+  const submittedAtRaw = c.submittedAt || c.createdAt;
+  const slaDueAtRaw = addDays(submittedAtRaw, COMPLAINT_SLA_DAYS);
+  const daysOpen = getDaysOpen(submittedAtRaw, c.resolvedAt);
+  const hoursToSla = getHoursToSla(slaDueAtRaw);
+  const isOpen = c.status !== "RESOLVED";
+  const isOverdue = isOpen && daysOpen > COMPLAINT_SLA_DAYS;
+  const isDueSoon = isOpen && hoursToSla !== null && hoursToSla > 0 && hoursToSla <= 72;
 
   return {
     id: `#${displayCode}`,
@@ -113,12 +132,24 @@ export const toComplaintUiModel = (c) => {
     category: categoryMap[c.category] || c.category || "Not specified",
     rawCategory: c.category,
     department: categoryMap[c.category] || c.category || "Customer Service",
-    priority: priorityMap[c.priority] || c.priority || "Medium",
+    priority: c.priority ? priorityMap[c.priority] || c.priority : null,
     rawPriority: c.priority,
     status,
     rawStatus: c.status,
+    validationStatus: c.validationStatus,
+    isRejected: c.validationStatus === "INVALID" || Boolean(c.rejectionReason),
     isActive: ACTIVE_STATUSES.has(status),
-    isClosed: CLOSED_STATUSES.has(status),
+    isClosed: RESOLVED_STATUSES.has(status),
+    daysOpen,
+    slaDays: COMPLAINT_SLA_DAYS,
+    slaDueAt: formatDate(slaDueAtRaw),
+    slaDueAtRaw,
+    hoursToSla,
+    submittedAtRaw,
+    createdAtRaw: c.createdAt,
+    resolvedAtRaw: c.resolvedAt,
+    isOverdue,
+    isDueSoon,
 
     orderId: c.orderId || extras.orderId,
     phone: c.phone || extras.phone,
@@ -169,7 +200,7 @@ export const toComplaintUiModel = (c) => {
 
 export const createComplaint = async (payload) => {
   const formData = new FormData();
-  ["title", "category", "priority", "orderId", "phone", "description"].forEach((field) => {
+  ["title", "category", "orderId", "phone", "description"].forEach((field) => {
     formData.append(field, payload[field]);
   });
   payload.evidenceFiles.forEach((file) => formData.append("evidenceFiles", file));

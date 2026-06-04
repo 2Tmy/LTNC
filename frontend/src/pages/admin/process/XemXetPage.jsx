@@ -17,7 +17,7 @@ export default function XemXetPage() {
       setLoading(true);
       try {
         const data = await getAllComplaints();
-        setComplaints(data.filter((c) => c.rawStatus === "PENDING_VALIDATION"));
+        setComplaints(data.filter((c) => c.rawStatus === "VALIDATING"));
       } catch (e) {
         setError(e.response?.data?.message || "Unable to load complaints.");
       } finally {
@@ -53,7 +53,7 @@ export default function XemXetPage() {
             </div>
           ) : (
             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-              <div className="hidden grid-cols-[1fr_1fr_0.6fr_0.9fr_auto] gap-4 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 md:grid">
+              <div className="hidden grid-cols-[1fr_1fr_0.7fr_0.9fr_auto] gap-4 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 md:grid">
                 <span>Code / Title</span>
                 <span>Customer</span>
                 <span>Category</span>
@@ -64,7 +64,7 @@ export default function XemXetPage() {
                 {complaints.map((c) => (
                   <div
                     key={c.apiId}
-                    className="grid grid-cols-1 items-center gap-3 px-4 py-4 md:grid-cols-[1fr_1fr_0.6fr_0.9fr_auto] md:gap-4"
+                    className="grid grid-cols-1 items-center gap-3 px-4 py-4 md:grid-cols-[1fr_1fr_0.7fr_0.9fr_auto] md:gap-4"
                   >
                     <div>
                       <p className="text-xs text-slate-400">{c.id}</p>
@@ -77,7 +77,7 @@ export default function XemXetPage() {
                     <p className="text-sm text-slate-600">{c.category}</p>
                     <p className="text-xs text-slate-400">{c.submittedAt}</p>
                     <Link
-                      to={`${ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", c.slug)}?from=validate`}
+                      to={ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", c.slug)}
                       className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700"
                     >
                       <span className="material-symbols-outlined text-[15px]">open_in_new</span>

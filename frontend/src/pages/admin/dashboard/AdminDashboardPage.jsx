@@ -1,28 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import AdminComplaintsTable from "../../../components/admin/AdminComplaintsTable.jsx";
 import AdminMetricCard from "../../../components/admin/AdminMetricCard.jsx";
-import ComplaintsBarChart from "../../../components/admin/ComplaintsBarChart.jsx";
-import PipelineStatusChart from "../../../components/admin/PipelineStatusChart.jsx";
 import { useCurrentUser } from "../../../hooks/useCurrentUser.js";
 import AdminSidebar from "../../../layouts/AdminSidebar.jsx";
 import AdminTopBar from "../../../layouts/AdminTopBar.jsx";
 import { ROUTE_PATHS } from "../../../routes/routePaths.js";
-import { ACTIVE_STATUSES, getAllComplaints, RESOLVED_STATUSES } from "../../../services/complaintService.js";
-
-const bars = [
-  { label: "May", height: 38, opacity: 0.22 },
-  { label: "Jun", height: 52, opacity: 0.35 },
-  { label: "Jul", height: 43, opacity: 0.55 },
-  { label: "Aug", height: 66, opacity: 0.85 },
-  { label: "Sep", height: 85, active: true },
-  { label: "Oct", height: 57, opacity: 0.95 },
-];
+import { getAllComplaints } from "../../../services/complaintService.js";
 
 export default function AdminDashboardPage() {
   const user = useCurrentUser();
 
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const loadComplaints = async () => {
@@ -41,9 +32,11 @@ export default function AdminDashboardPage() {
 
   const metrics = useMemo(() => {
     const total = complaints.length;
-    const pending = complaints.filter((item) => ACTIVE_STATUSES.has(item.status)).length;
-    const resolved = complaints.filter((item) => RESOLVED_STATUSES.has(item.status)).length;
-    const rejected = complaints.filter((item) => item.status === "Rejected").length;
+    const pending = complaints.filter(
+      (item) => item.rawStatus !== "RESOLVED"
+    ).length;
+    const resolved = complaints.filter((item) => item.rawStatus === "RESOLVED" && !item.isRejected).length;
+    const rejected = complaints.filter((item) => item.isRejected).length;
 
     return [
       {
@@ -53,16 +46,16 @@ export default function AdminDashboardPage() {
         iconClassName: "bg-blue-50 text-blue-700",
         badge: "Live",
         badgeClassName: "bg-emerald-50 text-emerald-600",
-        to: ROUTE_PATHS.adminReceive,
+        to: ROUTE_PATHS.adminComplaintsAll,
       },
       {
         label: "Pending",
         value: loading ? "..." : String(pending),
         icon: "pending_actions",
         iconClassName: "bg-amber-50 text-amber-600",
-        badge: "Waiting",
+        badge: "Open",
         badgeClassName: "bg-amber-50 text-amber-700",
-        to: ROUTE_PATHS.adminReceive,
+        to: ROUTE_PATHS.adminComplaintsPending,
       },
       {
         label: "Resolved",
@@ -80,12 +73,96 @@ export default function AdminDashboardPage() {
         iconClassName: "bg-rose-50 text-rose-600",
         badge: "Closed",
         badgeClassName: "bg-rose-50 text-rose-600",
+        to: ROUTE_PATHS.adminComplaintsRejected,
+      },
+    ];
+  }, [complaints, loading]);
+
+  const workflowMetrics = useMemo(() => {
+    const receive = complaints.filter((item) => item.rawStatus === "PENDING").length;
+    const validate = complaints.filter((item) => item.rawStatus === "VALIDATING").length;
+    const process = complaints.filter((item) => item.rawStatus === "RESOLVING").length;
+    const response = complaints.filter((item) => item.rawStatus === "RESOLVED" && !item.isRejected).length;
+
+    return [
+      {
+        label: "Receive",
+        value: loading ? "..." : String(receive),
+        icon: "move_to_inbox",
+        iconClassName: "bg-amber-50 text-amber-700",
+        badge: "Step 1",
+        badgeClassName: "bg-amber-50 text-amber-700",
+        to: ROUTE_PATHS.adminReceive,
+      },
+      {
+        label: "Validate",
+        value: loading ? "..." : String(validate),
+        icon: "fact_check",
+        iconClassName: "bg-blue-50 text-blue-700",
+        badge: "Step 2",
+        badgeClassName: "bg-blue-50 text-blue-700",
         to: ROUTE_PATHS.adminReview,
+      },
+      {
+        label: "Process",
+        value: loading ? "..." : String(process),
+        icon: "build_circle",
+        iconClassName: "bg-cyan-50 text-cyan-700",
+        badge: "Step 3",
+        badgeClassName: "bg-cyan-50 text-cyan-700",
+        to: ROUTE_PATHS.adminProcess,
+      },
+      {
+        label: "Response",
+        value: loading ? "..." : String(response),
+        icon: "mark_email_read",
+        iconClassName: "bg-emerald-50 text-emerald-700",
+        badge: "Step 4",
+        badgeClassName: "bg-emerald-50 text-emerald-700",
+        to: ROUTE_PATHS.adminResponse,
       },
     ];
   }, [complaints, loading]);
 
   const recentComplaints = complaints.slice(0, 5);
+  const overdueComplaints = useMemo(
+    () =>
+      complaints
+        .filter((item) => item.isOverdue)
+        .sort((a, b) => b.daysOpen - a.daysOpen)
+        .slice(0, 6),
+    [complaints]
+  );
+  const dueSoonComplaints = useMemo(
+    () =>
+      complaints
+        .filter((item) => item.isDueSoon)
+        .sort((a, b) => a.hoursToSla - b.hoursToSla)
+        .slice(0, 6),
+    [complaints]
+  );
+  const searchResults = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+    if (!keyword) return [];
+
+    return complaints
+      .filter((complaint) =>
+        [
+          complaint.id,
+          complaint.complaintCode,
+          complaint.title,
+          complaint.customer,
+          complaint.email,
+          complaint.phone,
+          complaint.status,
+          complaint.category,
+          complaint.orderId,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(keyword))
+      )
+      .slice(0, 8);
+  }, [complaints, searchTerm]);
 
   return (
     <div className="flex min-h-screen bg-surface text-on-background">
@@ -95,18 +172,173 @@ export default function AdminDashboardPage() {
         <AdminTopBar user={user} />
 
         <div className="mx-auto max-w-[1180px] space-y-lg p-xl">
-          <section className="grid grid-cols-1 gap-gutter sm:grid-cols-2 xl:grid-cols-4">
-            {metrics.map((metric) => (
-              <AdminMetricCard key={metric.label} {...metric} />
-            ))}
+          <section className="rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm">
+            <label className="relative block">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[22px] text-slate-400">
+                search
+              </span>
+              <input
+                className="h-12 w-full rounded-[0.5rem] border border-slate-200 bg-white pl-11 pr-4 text-body-md text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search customer name, email, phone, complaint ID, title, status, category..."
+              />
+            </label>
+
+            {searchTerm.trim() ? (
+              <div className="mt-md overflow-hidden rounded-[0.5rem] border border-slate-100">
+                {searchResults.length ? (
+                  <div className="divide-y divide-slate-100">
+                    {searchResults.map((complaint) => (
+                      <Link
+                        key={complaint.apiId}
+                        to={ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", complaint.slug)}
+                        className="grid grid-cols-1 gap-xs px-md py-sm transition hover:bg-slate-50 md:grid-cols-[1fr_0.8fr_0.45fr]"
+                      >
+                        <div>
+                          <p className="text-body-sm text-primary">{complaint.id}</p>
+                          <p className="text-body-md font-semibold text-on-surface">{complaint.title}</p>
+                        </div>
+                        <div>
+                          <p className="text-body-md text-on-surface">{complaint.customer}</p>
+                          <p className="text-body-sm text-secondary">{complaint.email}</p>
+                        </div>
+                        <span className="w-fit rounded-full bg-slate-100 px-sm py-xxs text-body-sm font-semibold text-secondary">
+                          {complaint.status}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="px-md py-sm text-body-md text-secondary">No matching customers or complaints found.</p>
+                )}
+              </div>
+            ) : null}
           </section>
 
-          <section>
-            <PipelineStatusChart />
+          <section className="space-y-sm">
+            <h2 className="text-h2 text-on-surface">Overview</h2>
+            <div className="grid grid-cols-1 items-stretch gap-gutter sm:grid-cols-2 lg:grid-cols-4">
+              {metrics.map((metric) => (
+                <AdminMetricCard key={metric.label} {...metric} />
+              ))}
+            </div>
           </section>
 
-          <section>
-            <ComplaintsBarChart bars={bars} />
+          <section className="space-y-sm">
+            <h2 className="text-h2 text-on-surface">Complaint Status</h2>
+            <div className="grid grid-cols-1 items-stretch gap-gutter sm:grid-cols-2 lg:grid-cols-4">
+              {workflowMetrics.map((metric) => (
+                <AdminMetricCard key={metric.label} {...metric} />
+              ))}
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-[0.75rem] border border-amber-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-md border-b border-amber-100 bg-amber-50 px-lg py-md">
+              <div>
+                <h2 className="text-h2 text-amber-800">SLA Expiry Notifications</h2>
+                <p className="mt-1 text-body-sm text-amber-700">
+                  Complaints below have 72 hours or less before the 15-day resolution deadline.
+                </p>
+              </div>
+              <span className="rounded-full bg-amber-100 px-sm py-xxs text-body-sm font-semibold text-amber-800">
+                {loading ? "..." : `${complaints.filter((item) => item.isDueSoon).length} due soon`}
+              </span>
+            </div>
+
+            {loading ? (
+              <p className="px-lg py-md text-body-md text-secondary">Checking SLA notifications...</p>
+            ) : dueSoonComplaints.length === 0 ? (
+              <p className="px-lg py-md text-body-md text-secondary">
+                No complaints are within the next 72-hour expiry window.
+              </p>
+            ) : (
+              <div className="divide-y divide-amber-100">
+                {dueSoonComplaints.map((complaint) => (
+                  <div
+                    key={complaint.apiId}
+                    className="grid grid-cols-1 gap-sm px-lg py-md md:grid-cols-[1fr_0.7fr_0.55fr_0.55fr_auto] md:items-center"
+                  >
+                    <div>
+                      <p className="text-body-sm text-amber-700">{complaint.id}</p>
+                      <p className="text-body-lg font-semibold text-on-surface">{complaint.title}</p>
+                    </div>
+                    <div>
+                      <p className="text-body-md text-on-surface">{complaint.customer}</p>
+                      <p className="text-body-sm text-secondary">{complaint.email}</p>
+                    </div>
+                    <span className="w-fit rounded-full bg-amber-100 px-sm py-xxs text-body-sm font-semibold text-amber-800">
+                      {complaint.hoursToSla}h left
+                    </span>
+                    <span className="w-fit rounded-full bg-slate-100 px-sm py-xxs text-body-sm font-semibold text-secondary">
+                      {complaint.status}
+                    </span>
+                    <Link
+                      to={ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", complaint.slug)}
+                      className="inline-flex items-center justify-center gap-xs rounded-[0.5rem] border border-amber-200 px-sm py-xs text-button text-amber-800 transition hover:bg-amber-50"
+                    >
+                      Review
+                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="overflow-hidden rounded-[0.75rem] border border-red-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-md border-b border-red-100 bg-red-50 px-lg py-md">
+              <div>
+                <h2 className="text-h2 text-red-800">Overdue Complaints</h2>
+                <p className="mt-1 text-body-sm text-red-700">
+                  Complaints must be resolved within 15 days from customer submission.
+                </p>
+              </div>
+              <span className="rounded-full bg-red-100 px-sm py-xxs text-body-sm font-semibold text-red-700">
+                {loading ? "..." : `${complaints.filter((item) => item.isOverdue).length} urgent`}
+              </span>
+            </div>
+
+            {loading ? (
+              <p className="px-lg py-md text-body-md text-secondary">Checking overdue complaints...</p>
+            ) : overdueComplaints.length === 0 ? (
+              <p className="px-lg py-md text-body-md text-secondary">
+                No overdue complaints at the moment.
+              </p>
+            ) : (
+              <div className="divide-y divide-red-100">
+                {overdueComplaints.map((complaint) => (
+                  <div
+                    key={complaint.apiId}
+                    className="grid grid-cols-1 gap-sm px-lg py-md md:grid-cols-[1fr_0.7fr_0.55fr_0.55fr_auto] md:items-center"
+                  >
+                    <div>
+                      <p className="text-body-sm text-red-700">{complaint.id}</p>
+                      <p className="text-body-lg font-semibold text-on-surface">{complaint.title}</p>
+                    </div>
+                    <div>
+                      <p className="text-body-md text-on-surface">{complaint.customer}</p>
+                      <p className="text-body-sm text-secondary">{complaint.email}</p>
+                    </div>
+                    <span className="w-fit rounded-full bg-red-100 px-sm py-xxs text-body-sm font-semibold text-red-700">
+                      {complaint.daysOpen} days open
+                    </span>
+                    <span className="w-fit rounded-full bg-slate-100 px-sm py-xxs text-body-sm font-semibold text-secondary">
+                      {complaint.status}
+                    </span>
+                    <Link
+                      to={ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", complaint.slug)}
+                      className="inline-flex items-center justify-center gap-xs rounded-[0.5rem] border border-red-200 px-sm py-xs text-button text-red-700 transition hover:bg-red-50"
+                    >
+                      Resolve now
+                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           <AdminComplaintsTable complaints={recentComplaints} />

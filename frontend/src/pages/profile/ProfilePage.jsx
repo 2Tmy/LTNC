@@ -13,12 +13,12 @@ export default function ProfilePage() {
   useEffect(() => {
     getMyComplaints()
       .then((complaints) => {
-        setOpenComplaints(complaints.filter((complaint) => complaint.isActive).length);
+        setOpenComplaints(complaints.filter((complaint) => complaint.rawStatus !== "RESOLVED").length);
       })
       .catch(() => setOpenComplaints("N/A"));
   }, []);
 
-  // Merge real user data with any locally saved profile extras (phone, address)
+  // Merge real user data with locally saved UI-only extras.
   let savedExtras = {};
   try {
     const raw = window.localStorage.getItem("demoProfile");
@@ -29,14 +29,17 @@ export default function ProfilePage() {
 
   const user = {
     ...baseUser,
-    phone: savedExtras.phone || "",
+    phone: baseUser.phone || "Not provided",
     address: savedExtras.address || "",
     preferredContact: savedExtras.preferredContact || "Email",
     openComplaints,
   };
 
   const handleSave = (profile) => {
-    window.localStorage.setItem("demoProfile", JSON.stringify(profile));
+    window.localStorage.setItem("demoProfile", JSON.stringify({
+      address: profile.address,
+      preferredContact: profile.preferredContact,
+    }));
     window.localStorage.setItem("demoName", profile.name);
     window.localStorage.setItem("demoEmail", profile.email);
   };

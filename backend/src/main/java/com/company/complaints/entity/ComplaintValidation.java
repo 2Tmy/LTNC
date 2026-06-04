@@ -55,7 +55,7 @@ public class ComplaintValidation {
     @Column(name = "rejection_reason", columnDefinition = "TEXT")
     private String rejectionReason;
 
-    // Populated when validationStatus = NEED_MORE_INFO; tells the customer what to provide
+    // Optional validation follow-up notes.
     @Column(name = "missing_information", columnDefinition = "TEXT")
     private String missingInformation;
 

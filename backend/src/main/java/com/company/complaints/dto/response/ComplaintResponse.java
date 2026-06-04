@@ -3,6 +3,7 @@ package com.company.complaints.dto.response;
 import com.company.complaints.enums.Category;
 import com.company.complaints.enums.ComplaintStatus;
 import com.company.complaints.enums.Priority;
+import com.company.complaints.enums.ValidationStatus;
 import lombok.Builder;
 import lombok.Data;
 
@@ -22,6 +23,7 @@ public class ComplaintResponse {
     private String investigationSummary;
     private String rootCause;
     private String rejectionReason;
+    private ValidationStatus validationStatus;
     private List<String> evidenceFiles;
     private List<ComplaintAttachmentResponse> evidenceAttachments;
     private Category category;

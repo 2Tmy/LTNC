@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const inputClass =
   "w-full rounded-[0.5rem] border border-outline-variant bg-white px-md py-sm text-body-md text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15";
@@ -12,6 +12,16 @@ export default function ProfileForm({ user, onSave }) {
     preferredContact: user.preferredContact,
   });
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setForm({
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      preferredContact: user.preferredContact,
+    });
+  }, [user.name, user.email, user.phone, user.address, user.preferredContact]);
 
   const updateField = (event) => {
     const { name, value } = event.target;
@@ -58,7 +68,14 @@ export default function ProfileForm({ user, onSave }) {
           <label className="text-label-md uppercase text-on-surface-variant" htmlFor="phone">
             Phone
           </label>
-          <input className={inputClass} id="phone" name="phone" type="tel" value={form.phone} onChange={updateField} />
+          <input
+            className={`${inputClass} bg-slate-50 text-on-surface-variant`}
+            id="phone"
+            name="phone"
+            type="tel"
+            value={form.phone}
+            readOnly
+          />
         </div>
 
         <div className="space-y-xs">

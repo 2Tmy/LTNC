@@ -23,7 +23,7 @@ public class AdminUserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllUsers() {
         String sql = """
-                SELECT id, name, email, role, enabled, created_at, updated_at
+                SELECT id, name, email, phone, role, enabled, created_at, updated_at
                 FROM users
                 ORDER BY created_at DESC NULLS LAST, id DESC
                 """;
@@ -34,6 +34,7 @@ public class AdminUserController {
             map.put("userId", rs.getLong("id")); // Safe fallback for frontend variables
             map.put("name", rs.getString("name"));
             map.put("email", rs.getString("email"));
+            map.put("phone", rs.getString("phone"));
             map.put("role", rs.getString("role"));
             map.put("enabled", rs.getBoolean("enabled"));
             map.put("status", rs.getBoolean("enabled") ? "Active" : "Inactive");
@@ -41,6 +42,11 @@ public class AdminUserController {
             java.sql.Timestamp createdAt = rs.getTimestamp("created_at");
             if (createdAt != null) {
                 map.put("createdAt", createdAt.toLocalDateTime());
+            }
+
+            java.sql.Timestamp updatedAt = rs.getTimestamp("updated_at");
+            if (updatedAt != null) {
+                map.put("updatedAt", updatedAt.toLocalDateTime());
             }
             return map;
         });

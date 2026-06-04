@@ -53,17 +53,16 @@ public class Complaint {
     @Column(nullable = false, length = 100)
     private Category category;
 
-    @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    private Priority priority = Priority.MEDIUM;
+    @Column(length = 50)
+    private Priority priority;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private ComplaintStatus status = ComplaintStatus.SUBMITTED;
+    private ComplaintStatus status = ComplaintStatus.PENDING;
 
-    // Tracks how many times the customer has edited after a NEED_MORE_INFO request
+    // Tracks how many times the customer has edited before admin receives the complaint
     @Builder.Default
     @Column(name = "edit_count", nullable = false)
     private int editCount = 0;
@@ -71,7 +70,6 @@ public class Complaint {
     @Column(name = "last_edited_at")
     private LocalDateTime lastEditedAt;
 
-    // Set to NOW() + 7 days when status transitions to NEED_MORE_INFO
     @Column(name = "edit_deadline")
     private LocalDateTime editDeadline;
 

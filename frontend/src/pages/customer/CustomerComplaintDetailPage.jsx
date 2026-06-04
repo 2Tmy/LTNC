@@ -10,14 +10,11 @@ import EvidenceFileList from "../../components/complaint/EvidenceFileList.jsx";
 const statusStyles = {
   Pending: "bg-orange-50 text-orange-700",
   Validating: "bg-blue-50 text-blue-700",
-  "Needs Info": "bg-yellow-50 text-yellow-700",
-  Investigating: "bg-indigo-50 text-indigo-700",
   Resolving: "bg-cyan-50 text-cyan-700",
   Resolved: "bg-green-50 text-green-700",
-  Rejected: "bg-red-50 text-red-700",
 };
 
-const stepOrder = ["Pending", "Validating", "Investigating", "Resolving", "Resolved"];
+const stepOrder = ["Pending", "Validating", "Resolving", "Resolved"];
 
 const getStatusIndex = (status) => {
   const index = stepOrder.indexOf(status);
@@ -165,13 +162,8 @@ export default function CustomerComplaintDetailPage() {
       icon: "fact_check",
     },
     {
-      label: "Investigating",
-      description: "Admin is handling the complaint",
-      icon: "search",
-    },
-    {
       label: "Resolving",
-      description: "Admin response is being prepared",
+      description: "Admin is handling the complaint and preparing a response",
       icon: "rate_review",
     },
     {
@@ -219,7 +211,7 @@ export default function CustomerComplaintDetailPage() {
           <section className="rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm">
             <h2 className="text-h2 text-on-surface">Complaint Status</h2>
 
-            <div className="mt-lg grid grid-cols-1 gap-md md:grid-cols-5">
+            <div className="mt-lg grid grid-cols-1 gap-md md:grid-cols-4">
               {timelineSteps.map((step, index) => {
                 const isDone = index < activeIndex;
                 const isActive = index === activeIndex;
@@ -291,19 +283,16 @@ export default function CustomerComplaintDetailPage() {
                 </div>
 
                 <div>
-                  <p className="text-label-md uppercase text-on-surface-variant">Raw status</p>
-                  <p className="mt-xxs text-body-md text-on-surface">{complaint.rawStatus}</p>
-                </div>
-
-                <div>
                   <p className="text-label-md uppercase text-on-surface-variant">Category</p>
                   <p className="mt-xxs text-body-md text-on-surface">{complaint.category}</p>
                 </div>
 
-                <div>
-                  <p className="text-label-md uppercase text-on-surface-variant">Priority</p>
-                  <p className="mt-xxs text-body-md text-on-surface">{complaint.priority}</p>
-                </div>
+                {complaint.priority && (
+                  <div>
+                    <p className="text-label-md uppercase text-on-surface-variant">Priority</p>
+                    <p className="mt-xxs text-body-md text-on-surface">{complaint.priority}</p>
+                  </div>
+                )}
 
                 <div>
                   <p className="text-label-md uppercase text-on-surface-variant">Order ID</p>
