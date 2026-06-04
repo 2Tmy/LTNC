@@ -16,11 +16,8 @@ import { ROUTE_PATHS } from "../../../routes/routePaths.js";
 const statusStyles = {
   Pending: "bg-orange-50 text-orange-700",
   Validating: "bg-blue-50 text-blue-700",
-  "Needs Info": "bg-yellow-50 text-yellow-700",
-  Investigating: "bg-indigo-50 text-indigo-700",
   Resolving: "bg-cyan-50 text-cyan-700",
   Resolved: "bg-green-50 text-green-700",
-  Rejected: "bg-red-50 text-red-700",
 };
 
 const stepOrder = ["Pending", "Validating", "Resolving", "Resolved"];
@@ -33,7 +30,7 @@ const checklistItems = [
 ];
 
 const emptyChecklist = Object.fromEntries(checklistItems.map(([key]) => [key, null]));
-const emptyInvestigationForm = { investigationSummary: "", rootCause: "", resolution: "" };
+const emptyInvestigationForm = { rootCause: "", resolution: "" };
 
 export default function AdminComplaintDetailPage() {
   const user = useCurrentUser();
@@ -58,9 +55,8 @@ export default function AdminComplaintDetailPage() {
     try {
       const data = await getComplaintByCode(complaintId);
       setComplaint(data);
-      if (data.rawStatus === "INVESTIGATING") {
+      if (data.rawStatus === "RESOLVING") {
         setInvForm({
-          investigationSummary: data.investigationSummary || "",
           rootCause: data.rootCause || "",
           resolution: data.resolution || "",
         });
@@ -116,8 +112,12 @@ export default function AdminComplaintDetailPage() {
     setSaving(true);
     setActionError("");
     try {
-      await proposeResolution(complaint.apiId, invForm);
-      navigate(-1);
+      const updated = await proposeResolution(complaint.apiId, invForm);
+      setComplaint(updated);
+      setInvForm({
+        rootCause: updated.rootCause || "",
+        resolution: updated.resolution || "",
+      });
     } catch (e) {
       setActionError(e.response?.data?.message || "Unable to save resolution.");
     } finally {
@@ -180,13 +180,11 @@ export default function AdminComplaintDetailPage() {
     );
   }
 
-  const activeIndex = complaint.status === "Rejected"
-    ? 1
-    : stepOrder.indexOf(complaint.status);
+  const activeIndex = stepOrder.indexOf(complaint.status);
   const timelineSteps = [
     { label: "Pending",    description: "Customer submitted the complaint",        icon: "inbox"      },
-    { label: "Validating", description: "Admin reviewed and validated the complaint", icon: "fact_check" },
-    { label: "Resolving",  description: "Admin is investigating and preparing a response", icon: "rate_review" },
+    { label: "Validating", description: "Admin is checking whether the complaint is valid", icon: "fact_check" },
+    { label: "Resolving",  description: "Admin is investigating, handling root cause, and preparing a solution", icon: "rate_review" },
     { label: "Resolved",   description: "Response sent to customer",               icon: "task_alt"   },
   ];
 
@@ -221,7 +219,7 @@ export default function AdminComplaintDetailPage() {
           {/* Timeline */}
           <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="mb-4 text-sm font-semibold text-slate-700">Complaint Status</h2>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
               {timelineSteps.map((step, index) => {
                 const isDone = index < activeIndex;
                 const isActive = index === activeIndex;
@@ -264,7 +262,7 @@ export default function AdminComplaintDetailPage() {
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 {[
                   ["Category", complaint.category],
-                  ["Priority", complaint.priority],
+                  ["Priority", complaint.priority || "Not set"],
                   ["Order ID", complaint.orderId || "Not provided"],
                   ["Phone", complaint.phone || "Not provided"],
                   ["Submitted", complaint.submittedAt],
@@ -283,13 +281,6 @@ export default function AdminComplaintDetailPage() {
                   {complaint.description}
                 </p>
               </div>
-
-              {complaint.investigationSummary && (
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Investigation summary</p>
-                  <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{complaint.investigationSummary}</p>
-                </div>
-              )}
 
               {complaint.rootCause && (
                 <div>
@@ -333,21 +324,6 @@ export default function AdminComplaintDetailPage() {
                 <EvidenceFileList files={complaint.evidence} />
               </section>
 
-              <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h2 className="mb-3 text-sm font-semibold text-slate-700">Workflow</h2>
-                <div className="space-y-2">
-                  {[
-                    ["Validated by", complaint.validatedByName],
-                    ["Assigned to", complaint.assignedToName],
-                    ["Approved by", complaint.approvedByName],
-                  ].map(([label, value]) => (
-                    <div key={label}>
-                      <p className="text-xs text-slate-400">{label}</p>
-                      <p className="text-sm text-slate-700">{value || "—"}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
             </aside>
           </div>
 
@@ -356,8 +332,8 @@ export default function AdminComplaintDetailPage() {
             <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{actionError}</p>
           )}
 
-          {/* PENDING_VALIDATION — validate checklist */}
-          {complaint.rawStatus === "PENDING_VALIDATION" && (
+          {/* VALIDATING - validate checklist */}
+          {complaint.rawStatus === "VALIDATING" && (
             <section className="rounded-xl border border-blue-200 bg-white p-5 shadow-sm">
               <h2 className="mb-1 text-base font-semibold text-slate-800">Validation checklist</h2>
               <p className="mb-4 text-sm text-slate-500">
@@ -425,7 +401,7 @@ export default function AdminComplaintDetailPage() {
                   onClick={handleValidate}
                   className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-40"
                 >
-                  {saving ? "Saving..." : "Validate — move to investigation"}
+                  {saving ? "Saving..." : "Validate and move to resolving"}
                 </button>
                 <button
                   type="button"
@@ -439,17 +415,16 @@ export default function AdminComplaintDetailPage() {
             </section>
           )}
 
-          {/* INVESTIGATING or RESOLVING — investigation form + send response */}
-          {(complaint.rawStatus === "INVESTIGATING" || complaint.rawStatus === "RESOLVING") && (
+          {/* RESOLVING - investigation, solution, and response */}
+          {complaint.rawStatus === "RESOLVING" && (
             <section className="rounded-xl border border-indigo-200 bg-white p-5 shadow-sm">
-              <h2 className="mb-1 text-base font-semibold text-slate-800">Investigation & Resolution</h2>
+              <h2 className="mb-1 text-base font-semibold text-slate-800">Root Cause & Resolution</h2>
               <p className="mb-4 text-sm text-slate-500">
-                Record the investigation findings and draft the customer-facing response.
+                Record the root cause and draft the customer-facing response.
               </p>
 
               <div className="space-y-4">
                 {[
-                  ["investigationSummary", "Investigation summary", "What was found during investigation?"],
                   ["rootCause", "Root cause", "What caused the issue?"],
                   ["resolution", "Resolution sent to customer", "What is being done to resolve the complaint?"],
                 ].map(([field, label, placeholder]) => (
@@ -466,31 +441,26 @@ export default function AdminComplaintDetailPage() {
               </div>
 
               <div className="mt-4 flex flex-wrap gap-3">
-                {complaint.rawStatus === "INVESTIGATING" && (
-                  <button
-                    type="button"
-                    disabled={
-                      !invForm.investigationSummary.trim() ||
-                      !invForm.rootCause.trim() ||
-                      !invForm.resolution.trim() ||
-                      saving
-                    }
-                    onClick={handleProposeResolution}
-                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
-                  >
-                    {saving ? "Saving..." : "Save & prepare response"}
-                  </button>
-                )}
-                {complaint.rawStatus === "RESOLVING" && (
-                  <button
-                    type="button"
-                    disabled={saving}
-                    onClick={handleSendResponse}
-                    className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-40"
-                  >
-                    {saving ? "Sending..." : "Send response and resolve"}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  disabled={
+                    !invForm.rootCause.trim() ||
+                    !invForm.resolution.trim() ||
+                    saving
+                  }
+                  onClick={handleProposeResolution}
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40"
+                >
+                  {saving ? "Saving..." : "Save solution"}
+                </button>
+                <button
+                  type="button"
+                  disabled={!complaint.resolution || saving}
+                  onClick={handleSendResponse}
+                  className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-40"
+                >
+                  {saving ? "Sending..." : "Send response and resolve"}
+                </button>
               </div>
             </section>
           )}

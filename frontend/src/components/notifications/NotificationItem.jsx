@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 const typeClasses = {
   status: "bg-blue-50 text-primary-container",
   message: "bg-indigo-50 text-indigo-700",
@@ -30,11 +32,24 @@ export default function NotificationItem({ notification, onMarkRead }) {
             <span className="shrink-0 text-body-sm text-on-surface-variant">{notification.time}</span>
           </div>
 
-          {notification.unread ? (
-            <button className="mt-sm text-button text-primary hover:underline" type="button" onClick={() => onMarkRead(notification.id)}>
-              Mark as read
-            </button>
-          ) : null}
+          <div className="mt-sm flex flex-wrap gap-sm">
+            {notification.actionUrl ? (
+              <Link
+                className="inline-flex items-center gap-xs text-button text-primary hover:underline"
+                to={notification.actionUrl}
+                onClick={() => notification.unread && onMarkRead(notification.id)}
+              >
+                View complaint
+                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+              </Link>
+            ) : null}
+
+            {notification.unread ? (
+              <button className="text-button text-primary hover:underline" type="button" onClick={() => onMarkRead(notification.id)}>
+                Mark as read
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
     </article>

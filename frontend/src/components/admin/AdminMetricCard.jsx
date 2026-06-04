@@ -19,7 +19,7 @@ export default function AdminMetricCard({ label, value, icon, iconClassName, bad
   if (to) {
     return (
       <Link
-        className="block rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+        className="flex h-full min-h-[184px] flex-col rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/20"
         to={to}
       >
         {content}
@@ -28,7 +28,7 @@ export default function AdminMetricCard({ label, value, icon, iconClassName, bad
   }
 
   return (
-    <article className="rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm">
+    <article className="flex h-full min-h-[184px] flex-col rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm">
       {content}
     </article>
   );

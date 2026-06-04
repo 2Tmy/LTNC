@@ -1,14 +1,10 @@
 import { Link } from "react-router-dom";
 
 const statusClasses = {
-  Investigating: "bg-indigo-50 text-indigo-700",
   Pending: "bg-orange-50 text-orange-700",
   Resolved: "bg-green-50 text-green-700",
-  "In Progress": "bg-indigo-50 text-indigo-700",
   Resolving: "bg-cyan-50 text-cyan-700",
   Validating: "bg-blue-50 text-blue-700",
-  "Needs Info": "bg-yellow-50 text-yellow-700",
-  Rejected: "bg-red-50 text-red-700",
 };
 
 export default function ComplaintTable({ complaints }) {

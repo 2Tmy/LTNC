@@ -88,7 +88,7 @@ public class ComplaintController {
 
     /**
      * PUT /api/complaints/{id}/receive - ADMIN marks a complaint as received,
-     * moving it from SUBMITTED → PENDING_VALIDATION for the validation queue.
+     * moving it from PENDING to VALIDATING for the validation queue.
      
      */
     @PutMapping("/{id}/receive")
@@ -102,7 +102,7 @@ public class ComplaintController {
     }
     /**
      * PUT /api/complaints/{id} — customer updates title/description
-     * while complaint status is NEED_MORE_INFO.
+     * while complaint status is PENDING.
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('CUSTOMER')")

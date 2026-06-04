@@ -41,8 +41,8 @@ CREATE TABLE complaints (
     investigation_summary TEXT,
     root_cause     TEXT,
     category       VARCHAR(100) NOT NULL,
-    priority       VARCHAR(50)  NOT NULL DEFAULT 'MEDIUM',
-    status         VARCHAR(50)  NOT NULL DEFAULT 'SUBMITTED',
+    priority       VARCHAR(50),
+    status         VARCHAR(50)  NOT NULL DEFAULT 'PENDING',
     edit_count     INTEGER      NOT NULL DEFAULT 0,
     last_edited_at TIMESTAMP,
     edit_deadline  TIMESTAMP,
@@ -72,8 +72,7 @@ CREATE TABLE complaints (
         CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH', 'URGENT')),
     CONSTRAINT chk_complaints_status
         CHECK (status IN (
-            'SUBMITTED', 'PENDING_VALIDATION', 'INVESTIGATING', 'RESOLVING',
-            'RESOLVED', 'REJECTED', 'NEED_MORE_INFO', 'CLOSED'
+            'PENDING', 'VALIDATING', 'RESOLVING', 'RESOLVED'
         ))
 );
 
@@ -103,7 +102,7 @@ CREATE TABLE complaint_validations (
     CONSTRAINT fk_complaint_validations_user
         FOREIGN KEY (validated_by) REFERENCES users(id),
     CONSTRAINT chk_complaint_validations_status
-        CHECK (validation_status IN ('VALID', 'INVALID', 'NEED_MORE_INFO'))
+        CHECK (validation_status IN ('VALID', 'INVALID'))
 );
 
 CREATE TABLE complaint_histories (

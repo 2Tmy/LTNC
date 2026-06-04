@@ -11,9 +11,9 @@ const inputClass =
 
 const COMPLAINT_TYPES = [
   {
-    value: "GOODS",
+    value: "PRODUCT",
     backendCategory: "PRODUCT",
-    label: "Goods Complaint",
+    label: "Product",
     description: "Issues with item condition, quantity, or quality upon receipt",
     icon: "inventory_2",
     accent: "blue",
@@ -27,7 +27,7 @@ const COMPLAINT_TYPES = [
   {
     value: "DELIVERY",
     backendCategory: "DELIVERY",
-    label: "Delivery Complaint",
+    label: "Delivery",
     description: "Issues with shipping service, courier behavior, timing, or address",
     icon: "local_shipping",
     accent: "orange",
@@ -35,6 +35,48 @@ const COMPLAINT_TYPES = [
       { value: "LATE", label: "Late Delivery" },
       { value: "WRONG_ADDRESS", label: "Delivered to Wrong Address" },
       { value: "COURIER_BEHAVIOR", label: "Courier Behavior" },
+      { value: "OTHER", label: "Other" },
+    ],
+  },
+  {
+    value: "SERVICE",
+    backendCategory: "SERVICE",
+    label: "Service",
+    description: "Issues with support quality, service process, or staff handling",
+    icon: "support_agent",
+    accent: "emerald",
+    subcategories: [
+      { value: "POOR_SUPPORT", label: "Poor Support" },
+      { value: "SLOW_RESPONSE", label: "Slow Response" },
+      { value: "PROCESS_ISSUE", label: "Process Issue" },
+      { value: "STAFF_ATTITUDE", label: "Staff Attitude" },
+    ],
+  },
+  {
+    value: "BILLING",
+    backendCategory: "BILLING",
+    label: "Billing",
+    description: "Issues with payment, invoice, refund, or unexpected charges",
+    icon: "receipt_long",
+    accent: "violet",
+    subcategories: [
+      { value: "WRONG_CHARGE", label: "Wrong Charge" },
+      { value: "REFUND_DELAY", label: "Refund Delay" },
+      { value: "INVOICE_ERROR", label: "Invoice Error" },
+      { value: "PAYMENT_FAILED", label: "Payment Failed" },
+    ],
+  },
+  {
+    value: "OTHER",
+    backendCategory: "OTHER",
+    label: "Other",
+    description: "Issues that do not fit product, service, delivery, or billing",
+    icon: "more_horiz",
+    accent: "slate",
+    subcategories: [
+      { value: "GENERAL", label: "General Complaint" },
+      { value: "ACCOUNT", label: "Account Issue" },
+      { value: "POLICY", label: "Policy Concern" },
       { value: "OTHER", label: "Other" },
     ],
   },
@@ -50,6 +92,21 @@ const accentMap = {
     card: "border-orange-400 bg-orange-50/60",
     iconBox: "bg-orange-100 text-orange-700",
     badge: "bg-orange-600 text-white",
+  },
+  emerald: {
+    card: "border-emerald-400 bg-emerald-50/60",
+    iconBox: "bg-emerald-100 text-emerald-700",
+    badge: "bg-emerald-600 text-white",
+  },
+  violet: {
+    card: "border-violet-400 bg-violet-50/60",
+    iconBox: "bg-violet-100 text-violet-700",
+    badge: "bg-violet-600 text-white",
+  },
+  slate: {
+    card: "border-slate-400 bg-slate-50",
+    iconBox: "bg-slate-200 text-slate-700",
+    badge: "bg-slate-700 text-white",
   },
 };
 
@@ -191,7 +248,7 @@ export default function SubmitComplaintPage() {
               <h2 className="text-base font-semibold text-slate-800">Select complaint type</h2>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {COMPLAINT_TYPES.map((type) => {
                 const a = accentMap[type.accent];
                 const active = selectedType === type.value;

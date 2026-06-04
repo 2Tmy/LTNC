@@ -4,28 +4,13 @@ import { useCurrentUser } from "../../hooks/useCurrentUser.js";
 import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
 import { ROUTE_PATHS } from "../../routes/routePaths.js";
-import { ACTIVE_STATUSES, getMyComplaints, RESOLVED_STATUSES } from "../../services/complaintService.js";
+import { getMyComplaints } from "../../services/complaintService.js";
 
 const statusStyles = {
   Pending: "bg-orange-50 text-orange-700",
   Validating: "bg-blue-50 text-blue-700",
-  "Needs Info": "bg-yellow-50 text-yellow-700",
-  Investigating: "bg-indigo-50 text-indigo-700",
-  Resolved: "bg-green-50 text-green-700",
-  Rejected: "bg-red-50 text-red-700",
-  SUBMITTED: "bg-orange-50 text-orange-700",
-  PENDING_VALIDATION: "bg-blue-50 text-blue-700",
-  VALIDATED: "bg-blue-50 text-blue-700",
-  NEED_MORE_INFO: "bg-yellow-50 text-yellow-700",
-  IN_REVIEW: "bg-indigo-50 text-indigo-700",
-  INVESTIGATING: "bg-indigo-50 text-indigo-700",
   Resolving: "bg-cyan-50 text-cyan-700",
-  RESOLVING: "bg-cyan-50 text-cyan-700",
-  PENDING_APPROVAL: "bg-cyan-50 text-cyan-700",
-  AWAITING_APPROVAL: "bg-cyan-50 text-cyan-700",
-  RESOLVED: "bg-green-50 text-green-700",
-  CLOSED: "bg-green-50 text-green-700",
-  REJECTED: "bg-red-50 text-red-700",
+  Resolved: "bg-green-50 text-green-700",
 };
 
 export default function CustomerDashboardPage() {
@@ -58,17 +43,13 @@ export default function CustomerDashboardPage() {
   }, []);
 
   const stats = useMemo(() => {
-    const total = complaints.length;
-
+    const open = complaints.filter((item) => item.rawStatus !== "RESOLVED").length;
     const pending = complaints.filter((item) => item.status === "Pending").length;
+    const validating = complaints.filter((item) => item.status === "Validating").length;
+    const resolving = complaints.filter((item) => item.status === "Resolving").length;
+    const resolved = complaints.filter((item) => item.status === "Resolved").length;
 
-    const inProgress = complaints.filter(
-      (item) => ACTIVE_STATUSES.has(item.status) && item.status !== "Pending"
-    ).length;
-
-    const resolved = complaints.filter((item) => RESOLVED_STATUSES.has(item.status)).length;
-
-    return { total, pending, inProgress, resolved };
+    return { open, pending, validating, resolving, resolved };
   }, [complaints]);
 
   return (
@@ -96,10 +77,10 @@ export default function CustomerDashboardPage() {
             </Link>
           </div>
 
-          <section className="grid grid-cols-1 gap-md md:grid-cols-4">
+          <section className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-5">
             <div className="rounded-[0.75rem] border border-outline-variant bg-white p-md shadow-sm">
-              <p className="text-label-md uppercase text-on-surface-variant">Total</p>
-              <p className="mt-xs text-h1 text-on-surface">{stats.total}</p>
+              <p className="text-label-md uppercase text-on-surface-variant">Open complaints</p>
+              <p className="mt-xs text-h1 text-on-surface">{stats.open}</p>
             </div>
 
             <div className="rounded-[0.75rem] border border-outline-variant bg-white p-md shadow-sm">
@@ -108,8 +89,13 @@ export default function CustomerDashboardPage() {
             </div>
 
             <div className="rounded-[0.75rem] border border-outline-variant bg-white p-md shadow-sm">
-              <p className="text-label-md uppercase text-on-surface-variant">In Progress</p>
-              <p className="mt-xs text-h1 text-on-surface">{stats.inProgress}</p>
+              <p className="text-label-md uppercase text-on-surface-variant">Validating</p>
+              <p className="mt-xs text-h1 text-on-surface">{stats.validating}</p>
+            </div>
+
+            <div className="rounded-[0.75rem] border border-outline-variant bg-white p-md shadow-sm">
+              <p className="text-label-md uppercase text-on-surface-variant">Resolving</p>
+              <p className="mt-xs text-h1 text-on-surface">{stats.resolving}</p>
             </div>
 
             <div className="rounded-[0.75rem] border border-outline-variant bg-white p-md shadow-sm">

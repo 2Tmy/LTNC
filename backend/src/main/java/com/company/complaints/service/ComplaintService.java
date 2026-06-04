@@ -13,7 +13,6 @@ import com.company.complaints.entity.ComplaintValidation;
 import com.company.complaints.entity.User;
 import com.company.complaints.enums.ComplaintStatus;
 import com.company.complaints.enums.NotificationType;
-import com.company.complaints.enums.Priority;
 import com.company.complaints.enums.Role;
 import com.company.complaints.enums.ValidationStatus;
 import com.company.complaints.exception.CustomExceptions.ComplaintNotFoundException;
@@ -80,11 +79,10 @@ public class ComplaintService {
                 .customer(customer)
                 .title(request.getTitle().trim())
                 .category(request.getCategory())
-                .priority(Priority.MEDIUM)
                 .orderId(trimToNull(request.getOrderId()))
                 .phone(trimToNull(request.getPhone()))
                 .description(request.getDescription().trim())
-                .status(ComplaintStatus.SUBMITTED)
+                .status(ComplaintStatus.PENDING)
                 .build(), "Complaint builder returned null");
 
         Complaint saved = saveComplaint(complaint);
@@ -111,7 +109,7 @@ public class ComplaintService {
 
     @Transactional(readOnly = true)
     public List<ComplaintResponse> getSubmittedComplaints() {
-        return complaintRepository.findByStatusOrderByCreatedAtDesc(ComplaintStatus.SUBMITTED)
+        return complaintRepository.findByStatusOrderByCreatedAtDesc(ComplaintStatus.PENDING)
                 .stream().map(this::toResponse).toList();
     }
 
@@ -160,7 +158,7 @@ public class ComplaintService {
     }
 
     /**
-     * ADMIN action: moves a SUBMITTED complaint to PENDING_VALIDATION,
+     * ADMIN action: moves a PENDING complaint to VALIDATING,
      * signalling it is ready for the validation step.
      */
     @Transactional
@@ -168,18 +166,18 @@ public class ComplaintService {
         User currentUser = getCurrentUser(authentication);
         Complaint complaint = findById(id);
 
-        if (complaint.getStatus() != ComplaintStatus.SUBMITTED) {
+        if (complaint.getStatus() != ComplaintStatus.PENDING) {
             throw new ComplaintStateException(
                     "Cannot submit for validation: complaint status is " + complaint.getStatus());
         }
 
-        complaint.setStatus(ComplaintStatus.PENDING_VALIDATION);
+        complaint.setStatus(ComplaintStatus.VALIDATING);
         complaint.setValidatedBy(currentUser);
         complaint.setValidatedAt(LocalDateTime.now());
         notificationService.notifyCustomer(complaint, NotificationType.COMPLAINT_RECEIVED,
                 "Complaint received",
                 complaint.getComplaintCode() + " was received and is now being validated.");
-        log.info("Complaint {} moved to PENDING_VALIDATION by {}",
+        log.info("Complaint {} moved to VALIDATING by {}",
                 complaint.getComplaintCode(), currentUser.getEmail());
         return toResponse(saveComplaint(complaint));
     }
@@ -189,7 +187,7 @@ public class ComplaintService {
                                                Authentication authentication) {
         User currentUser = getCurrentUser(authentication);
         Complaint complaint = findById(id);
-        if (complaint.getStatus() != ComplaintStatus.PENDING_VALIDATION) {
+        if (complaint.getStatus() != ComplaintStatus.VALIDATING) {
             throw new ComplaintStateException(
                     "Cannot validate complaint with status " + complaint.getStatus());
         }
@@ -211,14 +209,14 @@ public class ComplaintService {
         validationRepository.save(Objects.requireNonNull(validation, "Complaint validation is required"));
 
         complaint.setPriority(Objects.requireNonNull(request.getPriority(), "Priority is required"));
-        complaint.setStatus(ComplaintStatus.INVESTIGATING);
+        complaint.setStatus(ComplaintStatus.RESOLVING);
         complaint.setValidatedBy(currentUser);
         complaint.setValidatedAt(LocalDateTime.now());
         complaint.setAssignedTo(currentUser);
         complaint.setAssignedAt(LocalDateTime.now());
         notificationService.notifyCustomer(complaint, NotificationType.VALIDATION_VALID,
                 "Complaint validated",
-                complaint.getComplaintCode() + " passed validation and is now being investigated.");
+                complaint.getComplaintCode() + " passed validation and is now being resolved.");
         return toResponse(saveComplaint(complaint));
     }
 
@@ -227,7 +225,7 @@ public class ComplaintService {
                                               Authentication authentication) {
         User currentUser = getCurrentUser(authentication);
         Complaint complaint = findById(id);
-        if (complaint.getStatus() != ComplaintStatus.PENDING_VALIDATION) {
+        if (complaint.getStatus() != ComplaintStatus.VALIDATING) {
             throw new ComplaintStateException(
                     "Cannot reject complaint with status " + complaint.getStatus());
         }
@@ -245,9 +243,11 @@ public class ComplaintService {
         validation.setValidationNotes(trimToNull(request.getValidationNotes()));
         validationRepository.save(Objects.requireNonNull(validation, "Complaint validation is required"));
 
-        complaint.setStatus(ComplaintStatus.REJECTED);
+        complaint.setStatus(ComplaintStatus.RESOLVED);
         complaint.setValidatedBy(currentUser);
         complaint.setValidatedAt(LocalDateTime.now());
+        complaint.setApprovedBy(currentUser);
+        complaint.setResolvedAt(LocalDateTime.now());
         notificationService.notifyCustomer(complaint, NotificationType.VALIDATION_REJECTED,
                 "Complaint rejected",
                 complaint.getComplaintCode() + " was rejected during validation. Reason: " + reason);
@@ -259,19 +259,17 @@ public class ComplaintService {
                                                Authentication authentication) {
         User currentUser = getCurrentUser(authentication);
         Complaint complaint = findById(id);
-        if (complaint.getStatus() != ComplaintStatus.INVESTIGATING) {
+        if (complaint.getStatus() != ComplaintStatus.RESOLVING) {
             throw new ComplaintStateException(
                     "Cannot propose a resolution for complaint with status " + complaint.getStatus());
         }
 
-        complaint.setInvestigationSummary(request.getInvestigationSummary().trim());
         complaint.setRootCause(request.getRootCause().trim());
         complaint.setResolution(request.getResolution().trim());
-        complaint.setStatus(ComplaintStatus.RESOLVING);
         complaint.setAssignedTo(currentUser);
         notificationService.notifyCustomer(complaint, NotificationType.STATUS_CHANGE,
                 "Resolution prepared",
-                complaint.getComplaintCode() + " was investigated and a response is being prepared.");
+                complaint.getComplaintCode() + " was reviewed and a response is being prepared.");
         return toResponse(saveComplaint(complaint));
     }
 
@@ -297,7 +295,7 @@ public class ComplaintService {
     }
 
     /**
-     * Customer action: update title/description while status is NEED_MORE_INFO.
+     * Customer action: update title/description while status is PENDING.
      * Increments editCount and refreshes lastEditedAt.
      */
     @Transactional
@@ -310,8 +308,8 @@ public class ComplaintService {
             throw new AccessDeniedException("You do not have permission to edit this complaint");
         }
 
-        if (complaint.getStatus() != ComplaintStatus.NEED_MORE_INFO) {
-            throw new ComplaintStateException("Complaints can only be edited when status is NEED_MORE_INFO");
+        if (complaint.getStatus() != ComplaintStatus.PENDING) {
+            throw new ComplaintStateException("Complaints can only be edited while they are pending receipt");
         }
 
         if (complaint.getEditDeadline() != null
@@ -464,6 +462,7 @@ public class ComplaintService {
                 .investigationSummary(c.getInvestigationSummary())
                 .rootCause(c.getRootCause())
                 .rejectionReason(validation != null ? validation.getRejectionReason() : null)
+                .validationStatus(validation != null ? validation.getValidationStatus() : null)
                 .evidenceFiles(attachments.stream().map(ComplaintAttachment::getFileName).toList())
                 .evidenceAttachments(attachments.stream()
                         .map(attachment -> ComplaintAttachmentResponse.builder()

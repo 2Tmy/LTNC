@@ -1,7 +1,6 @@
 package com.company.complaints.dto.request;
 
 import com.company.complaints.enums.Category;
-import com.company.complaints.enums.Priority;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

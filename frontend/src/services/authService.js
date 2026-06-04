@@ -17,6 +17,7 @@ export const logout = () => {
   localStorage.removeItem("demoRole");
   localStorage.removeItem("demoBackendRole");
   localStorage.removeItem("demoEmail");
+  localStorage.removeItem("demoPhone");
   localStorage.removeItem("demoName");
   localStorage.removeItem("demoCreatedAt");
 };

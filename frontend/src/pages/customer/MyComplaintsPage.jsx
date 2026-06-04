@@ -9,10 +9,8 @@ import { getMyComplaints } from "../../services/complaintService.js";
 const statusBadge = {
   Pending: "bg-orange-50 text-orange-700",
   Validating: "bg-blue-50 text-blue-700",
-  Investigating: "bg-indigo-50 text-indigo-700",
   Resolving: "bg-cyan-50 text-cyan-700",
   Resolved: "bg-green-50 text-green-700",
-  Rejected: "bg-red-50 text-red-700",
 };
 
 export default function MyComplaintsPage() {
@@ -43,11 +41,9 @@ export default function MyComplaintsPage() {
   const filterOptions = [
     { value: "all", label: "All" },
     { value: "Pending", label: "Pending" },
-    { value: "Validating", label: "In Review" },
-    { value: "Investigating", label: "Investigating" },
+    { value: "Validating", label: "Validating" },
     { value: "Resolving", label: "Resolving" },
     { value: "Resolved", label: "Resolved" },
-    { value: "Rejected", label: "Rejected" },
   ];
 
   return (

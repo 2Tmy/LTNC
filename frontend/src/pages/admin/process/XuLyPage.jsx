@@ -24,7 +24,7 @@ export default function XuLyPage() {
       setLoading(true);
       try {
         const data = await getAllComplaints();
-        setComplaints(data.filter((c) => c.rawStatus === "INVESTIGATING"));
+        setComplaints(data.filter((c) => c.rawStatus === "RESOLVING"));
       } catch (e) {
         setError(e.response?.data?.message || "Unable to load complaints.");
       } finally {
@@ -43,7 +43,7 @@ export default function XuLyPage() {
             <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">Step 3</p>
             <h1 className="text-2xl font-bold">Process complaints</h1>
             <p className="mt-1 text-sm text-slate-500">
-              Open each complaint to record the investigation and prepare the customer response.
+              Open each complaint to record the root cause and customer response.
             </p>
           </header>
 
@@ -56,23 +56,22 @@ export default function XuLyPage() {
           ) : complaints.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-200 bg-white p-10 text-center">
               <span className="material-symbols-outlined text-[40px] text-slate-300">search</span>
-              <p className="mt-2 text-sm text-slate-500">No complaints currently being investigated.</p>
+              <p className="mt-2 text-sm text-slate-500">No complaints currently being resolved.</p>
             </div>
           ) : (
             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-              <div className="hidden grid-cols-[1fr_1fr_0.6fr_0.6fr_0.9fr_auto] gap-4 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 md:grid">
+              <div className="hidden grid-cols-[1fr_1fr_0.7fr_0.7fr_auto] gap-4 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 md:grid">
                 <span>Code / Title</span>
                 <span>Customer</span>
                 <span>Category</span>
                 <span>Priority</span>
-                <span>Assigned to</span>
                 <span />
               </div>
               <div className="divide-y divide-slate-100">
                 {complaints.map((c) => (
                   <div
                     key={c.apiId}
-                    className="grid grid-cols-1 items-center gap-3 px-4 py-4 md:grid-cols-[1fr_1fr_0.6fr_0.6fr_0.9fr_auto] md:gap-4"
+                    className="grid grid-cols-1 items-center gap-3 px-4 py-4 md:grid-cols-[1fr_1fr_0.7fr_0.7fr_auto] md:gap-4"
                   >
                     <div>
                       <p className="text-xs text-slate-400">{c.id}</p>
@@ -86,9 +85,8 @@ export default function XuLyPage() {
                     <span
                       className={`inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-semibold ${priorityStyles[c.priority] || "bg-slate-100 text-slate-600"}`}
                     >
-                      {c.priority}
+                      {c.priority || "Not set"}
                     </span>
-                    <p className="text-sm text-slate-600">{c.assignedToName}</p>
                     <Link
                       to={ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", c.slug)}
                       className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700"

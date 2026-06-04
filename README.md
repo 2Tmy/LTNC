@@ -146,33 +146,41 @@ spring.datasource.password=1
 
 ### Test Data
 
-Run the `seed` profile when you explicitly want to reset the local database.
-Normal startup preserves existing data.
+Run the `seed` profile when you explicitly want to reset the local database and load [backend/src/main/resources/data.sql](backend/src/main/resources/data.sql).
+Normal startup preserves existing data because `spring.sql.init.mode=never` in the default profile.
 **All test accounts use the password `password123`.**
 
-| Email | Role | Name |
-|-------|------|------|
+| Email pattern | Role | Name pattern |
+|---------------|------|--------------|
 | admin@test.com | ADMIN | Admin User |
 | agent@test.com | ADMIN | Support Agent |
-| alice@test.com | CUSTOMER | Alice Nguyen |
-| bob@test.com | CUSTOMER | Bob Tran |
-| charlie@test.com | CUSTOMER | Charlie Le |
-| diana@test.com | CUSTOMER | Diana Pham |
-| edward@test.com | CUSTOMER | Edward Vu |
-| fiona@test.com | CUSTOMER | Fiona Hoang |
-| george@test.com | CUSTOMER | George Do |
-| hannah@test.com | CUSTOMER | Hannah Bui |
-| ivan@test.com | CUSTOMER | Ivan Dao |
-| julia@test.com | CUSTOMER | Julia Ly |
+| customer01@test.com through customer28@test.com | CUSTOMER | Customer 01 through Customer 28 |
 
-The seed also inserts 10 complaints covering every status:
-`SUBMITTED`, `PENDING_VALIDATION`, `INVESTIGATING`, `RESOLVING`, `RESOLVED`,
-`REJECTED`, `NEED_MORE_INFO`, `CLOSED`.
+The seed inserts 50 demo complaints assigned across the generated customers and covering the four complaint statuses:
+`PENDING`, `VALIDATING`, `RESOLVING`, `RESOLVED`.
+
+Rejected demo complaints are stored as `RESOLVED` complaints with `validation_status = 'INVALID'` and a rejection reason.
+
+To run the seed from PowerShell:
+
+```powershell
+cd backend
+mvn spring-boot:run "-Dspring-boot.run.profiles=seed"
+```
+
+Stop the backend after the seed profile finishes startup, then run the backend normally to preserve data:
+
+```powershell
+mvn spring-boot:run
+```
+
+Use quotes around `-Dspring-boot.run.profiles=seed` in PowerShell. Without quotes, Maven can misread the argument and fail with `LifecyclePhaseNotFoundException`.
 
 To verify in psql:
 
 ```sql
 SELECT id, name, email, role FROM users ORDER BY role, id;
+SELECT status, COUNT(*) FROM complaints GROUP BY status ORDER BY status;
 ```
 
 ---
@@ -187,7 +195,7 @@ SELECT id, name, email, role FROM users ORDER BY role, id;
 | `title` | `VARCHAR` | NOT NULL | Brief summary |
 | `category` | `VARCHAR` | | Complaint category |
 | `priority` | `VARCHAR` | | Low, Medium, High |
-| `status` | `VARCHAR` | NOT NULL | Complaint lifecycle status, such as `SUBMITTED`, `PENDING_VALIDATION`, or `RESOLVED` |
+| `status` | `VARCHAR` | NOT NULL | Complaint lifecycle status: `PENDING`, `VALIDATING`, `RESOLVING`, or `RESOLVED` |
 | `order_id` | `VARCHAR` | | Related order reference |
 | `phone` | `VARCHAR` | | Complaint contact phone |
 | `description` | `TEXT` | | Detailed explanation |
@@ -282,19 +290,21 @@ The following REST endpoints have been implemented:
 
 The complaint lifecycle is currently defined as:
 ```text
+PENDING -> VALIDATING -> RESOLVING -> RESOLVED
+```
 
-SUBMITTED → PENDING_VALIDATION → INVESTIGATING → RESOLVING → RESOLVED
+The four complaint statuses are:
 
-To align with frontend display, status values are mapped as follows:
-
-| Backend Status | UI Representation |
+| Status | Meaning |
 |----------------|------------------|
-| `SUBMITTED` | Pending |
-| `PENDING_VALIDATION` | Validating |
-| `INVESTIGATING` | Investigating |
-| `RESOLVING` | Resolving |
-| `RESOLVED` | Resolved |
-| `REJECTED` | Rejected |
+| `PENDING` | Customer submitted the complaint; admin has not received it yet |
+| `VALIDATING` | Admin received the complaint and checks whether it is valid |
+| `RESOLVING` | Validated complaint is being handled, investigated, and given a solution |
+| `RESOLVED` | Complaint is completed |
+
+Rejected complaints are not a separate complaint status. They are completed as `RESOLVED` with `validation_status = 'INVALID'` in `complaint_validations`.
+
+Complaints must be resolved within 15 days from the customer submission date. Admin dashboard and analysis pages highlight overdue complaints that are still not `RESOLVED`.
 
 ---
 
@@ -333,10 +343,13 @@ The frontend has been integrated with the backend APIs for real-time data handli
 
 #### Admin Features
 
-- View submitted complaints  
-`/admin/tiep-nhan`
+- View pending complaints  
+`/admin/receive`
 
-- Receive complaint (status update from `SUBMITTED` → `PENDING_VALIDATION`)
+- Receive complaint (status update from `PENDING` to `VALIDATING`)
+- Validate complaint (status update from `VALIDATING` to `RESOLVING`, or reject as `RESOLVED`)
+- Resolve complaint (save investigation, root cause, and solution while `RESOLVING`)
+- Send response (status update from `RESOLVING` to `RESOLVED`)
 
 - View complaint detail (separate admin view)
 
@@ -354,7 +367,6 @@ The frontend has been integrated with the backend APIs for real-time data handli
 
 #### In Progress
 
-- Admin dashboard (currently using mock data)
 - Complaint status tracking dashboard
 - Aggregated metrics (total / pending / resolved complaints)
 
@@ -387,7 +399,7 @@ Full interactive documentation is available at `http://localhost:8080/swagger-ui
 **Login request:**
 ```json
 {
-  "email": "customer1@test.com",
+  "email": "customer01@test.com",
   "password": "password123"
 }
 ```
@@ -401,7 +413,7 @@ Full interactive documentation is available at `http://localhost:8080/swagger-ui
     "token": "eyJ...",
     "userId": 1,
     "name": "Nguyen Van An",
-    "email": "customer1@test.com",
+    "email": "customer01@test.com",
     "role": "CUSTOMER"
   }
 }

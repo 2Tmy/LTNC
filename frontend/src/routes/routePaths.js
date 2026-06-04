@@ -13,10 +13,15 @@ export const ROUTE_PATHS = {
 
   // Admin — dashboard + 4 process steps + user management
   adminDashboard: "/admin/dashboard",
-  adminReceive: "/admin/tiep-nhan",
-  adminReview: "/admin/xem-xet",
-  adminProcess: "/admin/xu-ly",
-  adminResponse: "/admin/phan-hoi",
+  adminAnalysis: "/admin/analysis",
+  adminComplaintsAll: "/admin/complaints/all",
+  adminComplaintsPending: "/admin/complaints/pending",
+  adminComplaintsResolved: "/admin/complaints/resolved",
+  adminComplaintsRejected: "/admin/complaints/rejected",
+  adminReceive: "/admin/receive",
+  adminReview: "/admin/validate",
+  adminProcess: "/admin/process",
+  adminResponse: "/admin/response",
   adminComplaintDetail: "/admin/complaints/:complaintId",
   adminUsers: "/admin/users",
 
