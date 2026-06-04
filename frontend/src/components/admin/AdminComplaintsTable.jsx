@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+
+const PAGE_SIZE = 10;
 
 const statusClasses = {
   Pending: "bg-amber-50 text-amber-700",
@@ -10,6 +12,7 @@ const statusClasses = {
 
 export default function AdminComplaintsTable({ complaints }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
 
   const filteredComplaints = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
@@ -26,6 +29,15 @@ export default function AdminComplaintsTable({ complaints }) {
         complaint.email?.toLowerCase().includes(keyword)
       );
     });
+  }, [complaints, searchTerm]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredComplaints.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const visibleComplaints = filteredComplaints.slice(startIndex, startIndex + PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(1);
   }, [complaints, searchTerm]);
 
   return (
@@ -67,7 +79,7 @@ export default function AdminComplaintsTable({ complaints }) {
                 </td>
               </tr>
             ) : (
-              filteredComplaints.map((complaint) => (
+              visibleComplaints.map((complaint) => (
                 <tr key={complaint.slug || complaint.id} className="transition-colors hover:bg-slate-50">
                   <td className="whitespace-nowrap px-lg py-md text-h3 text-primary">
                     {complaint.id}
@@ -126,13 +138,27 @@ export default function AdminComplaintsTable({ complaints }) {
 
       <div className="flex items-center justify-between border-t border-slate-100 px-lg py-md">
         <p className="text-body-sm text-secondary">
-          Showing {filteredComplaints.length} of {complaints.length} backend complaints
+          Showing{" "}
+          {filteredComplaints.length === 0
+            ? 0
+            : `${startIndex + 1}-${Math.min(startIndex + PAGE_SIZE, filteredComplaints.length)}`}{" "}
+          of {filteredComplaints.length} matching complaints
         </p>
         <div className="flex gap-2">
-          <button className="rounded-[0.5rem] border border-slate-200 px-4 py-2 text-body-sm text-slate-400" type="button">
+          <button
+            className="rounded-[0.5rem] border border-slate-200 px-4 py-2 text-body-sm text-on-surface transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+            type="button"
+            onClick={() => setPage((value) => Math.max(1, value - 1))}
+            disabled={currentPage === 1}
+          >
             Previous
           </button>
-          <button className="rounded-[0.5rem] border border-slate-200 px-4 py-2 text-body-sm text-on-surface hover:bg-slate-50" type="button">
+          <button
+            className="rounded-[0.5rem] border border-slate-200 px-4 py-2 text-body-sm text-on-surface transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+            type="button"
+            onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+            disabled={currentPage === totalPages}
+          >
             Next
           </button>
         </div>

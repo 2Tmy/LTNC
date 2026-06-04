@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import WorkflowComplaintsList from "../../../components/admin/WorkflowComplaintsList.jsx";
 import { useCurrentUser } from "../../../hooks/useCurrentUser.js";
 import AdminSidebar from "../../../layouts/AdminSidebar.jsx";
 import AdminTopBar from "../../../layouts/AdminTopBar.jsx";
@@ -33,6 +34,7 @@ export default function ReceiveComplaintsPage() {
   useEffect(() => {
     loadComplaints();
   }, []);
+
   const handleReceive = async (complaintId) => {
     setReceivingId(complaintId);
 
@@ -55,112 +57,21 @@ export default function ReceiveComplaintsPage() {
         <AdminTopBar user={user} />
 
         <div className="mx-auto w-full max-w-6xl space-y-lg p-lg">
-          <div className="flex flex-wrap items-center justify-between gap-md">
-            <div>
-              <h1 className="text-h1 text-on-surface">Receive complaints</h1>
-              <p className="mt-xs text-body-md text-on-surface-variant">
-                Review newly submitted complaints and confirm receipt for handling.
-              </p>
-            </div>
-
-            <button
-              className="inline-flex items-center justify-center gap-xs rounded-[0.5rem] border border-outline-variant bg-white px-lg py-sm text-button text-on-surface shadow-sm transition hover:bg-slate-50"
-              type="button"
-              onClick={loadComplaints}
-              disabled={loading}
-            >
-              <span className="material-symbols-outlined text-[20px]">refresh</span>
-              Refresh
-            </button>
-          </div>
-
-          <section className="rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-md">
-              <div>
-                <h2 className="text-h2 text-on-surface">Submitted complaints</h2>
-                <p className="mt-xxs text-body-md text-on-surface-variant">
-                  These complaints are waiting for admin receipt.
-                </p>
-              </div>
-
-              <span className="rounded-full bg-orange-50 px-sm py-xxs text-label-md text-orange-700">
-                {complaints.length} pending
-              </span>
-            </div>
-
-            {loading ? (
-              <div className="mt-lg flex items-center justify-center rounded-[0.5rem] bg-slate-50 p-xl text-center">
-                <div>
-                  <span className="material-symbols-outlined animate-spin text-[36px] text-primary">
-                    progress_activity
-                  </span>
-                  <p className="mt-sm text-body-md text-on-surface-variant">
-                    Loading submitted complaints...
-                  </p>
-                </div>
-              </div>
-            ) : loadError ? (
-              <div className="mt-lg rounded-[0.5rem] border border-error/30 bg-red-50 p-md text-body-md text-error">
-                {loadError}
-              </div>
-            ) : complaints.length === 0 ? (
-              <div className="mt-lg rounded-[0.5rem] border border-dashed border-outline-variant bg-slate-50 p-xl text-center">
-                <span className="material-symbols-outlined text-[44px] text-on-surface-variant">
-                  inventory_2
-                </span>
-                <h3 className="mt-sm text-h3 text-on-surface">No submitted complaints</h3>
-                <p className="mt-xs text-body-md text-on-surface-variant">
-                  There are no pending complaints waiting for receipt.
-                </p>
-              </div>
-            ) : (
-              <div className="mt-lg overflow-hidden rounded-[0.5rem] border border-outline-variant">
-                <div className="hidden grid-cols-[1fr_1fr_0.8fr_0.8fr] gap-md bg-slate-50 px-md py-sm text-label-md uppercase text-on-surface-variant md:grid">
-                  <span>Code / Title</span>
-                  <span>Customer</span>
-                  <span>Category</span>
-                  <span className="text-right">Action</span>
-                </div>
-
-                <div className="divide-y divide-outline-variant">
-                  {complaints.map((complaint) => (
-                    <div
-                      key={complaint.slug}
-                      className="grid grid-cols-1 gap-sm px-md py-md md:grid-cols-[1fr_1fr_0.8fr_0.8fr] md:items-center md:gap-md"
-                    >
-                      <div>
-                        <p className="text-body-sm text-on-surface-variant">{complaint.id}</p>
-                        <p className="mt-xxs font-medium text-on-surface">{complaint.title}</p>
-                        <p className="mt-xxs text-body-sm text-on-surface-variant">
-                          Submitted: {complaint.submittedAt}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-body-md text-on-surface">{complaint.customer}</p>
-                        <p className="text-body-sm text-on-surface-variant">{complaint.email}</p>
-                      </div>
-
-                      <p className="text-body-md text-on-surface-variant">
-                        {complaint.category}
-                      </p>
-
-                      <div className="flex justify-start gap-xs md:justify-end">
-                        <button
-                          className="inline-flex items-center justify-center rounded-[0.5rem] bg-primary px-sm py-xs text-button text-on-primary transition hover:bg-primary-container disabled:opacity-60"
-                          type="button"
-                          onClick={() => handleReceive(complaint.apiId)}
-                          disabled={receivingId === complaint.apiId}
-                        >
-                          {receivingId === complaint.apiId ? "Receiving..." : "Receive"}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
+          <WorkflowComplaintsList
+            accent="amber"
+            actionLabel="Receive"
+            complaints={complaints}
+            countLabel={`${complaints.length} pending`}
+            description="Review newly submitted complaints and confirm receipt for handling."
+            emptyIcon="inventory_2"
+            emptyText="There are no pending complaints waiting for receipt."
+            error={loadError}
+            loading={loading}
+            onAction={handleReceive}
+            pendingActionId={receivingId}
+            stepLabel="Step 1"
+            title="Receive complaints"
+          />
         </div>
       </main>
     </div>

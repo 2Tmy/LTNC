@@ -8,12 +8,16 @@ import AdminTopBar from "../../../layouts/AdminTopBar.jsx";
 import { ROUTE_PATHS } from "../../../routes/routePaths.js";
 import { getAllComplaints } from "../../../services/complaintService.js";
 
+const ALERT_PAGE_SIZE = 6;
+
 export default function AdminDashboardPage() {
   const user = useCurrentUser();
 
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [dueSoonPage, setDueSoonPage] = useState(1);
+  const [overduePage, setOverduePage] = useState(1);
 
   useEffect(() => {
     const loadComplaints = async () => {
@@ -124,23 +128,54 @@ export default function AdminDashboardPage() {
     ];
   }, [complaints, loading]);
 
-  const recentComplaints = complaints.slice(0, 5);
   const overdueComplaints = useMemo(
     () =>
       complaints
         .filter((item) => item.isOverdue)
-        .sort((a, b) => b.daysOpen - a.daysOpen)
-        .slice(0, 6),
+        .sort((a, b) => b.daysOpen - a.daysOpen),
     [complaints]
   );
   const dueSoonComplaints = useMemo(
     () =>
       complaints
         .filter((item) => item.isDueSoon)
-        .sort((a, b) => a.hoursToSla - b.hoursToSla)
-        .slice(0, 6),
+        .sort((a, b) => a.hoursToSla - b.hoursToSla),
     [complaints]
   );
+  const recentComplaints = useMemo(
+    () =>
+      [...complaints]
+        .sort(
+          (a, b) =>
+            new Date(b.submittedAtRaw || b.createdAtRaw || 0).getTime() -
+            new Date(a.submittedAtRaw || a.createdAtRaw || 0).getTime()
+        )
+        .slice(0, 15),
+    [complaints]
+  );
+  const dueSoonTotalPages = Math.max(1, Math.ceil(dueSoonComplaints.length / ALERT_PAGE_SIZE));
+  const dueSoonCurrentPage = Math.min(dueSoonPage, dueSoonTotalPages);
+  const dueSoonStartIndex = (dueSoonCurrentPage - 1) * ALERT_PAGE_SIZE;
+  const visibleDueSoonComplaints = dueSoonComplaints.slice(
+    dueSoonStartIndex,
+    dueSoonStartIndex + ALERT_PAGE_SIZE
+  );
+  const overdueTotalPages = Math.max(1, Math.ceil(overdueComplaints.length / ALERT_PAGE_SIZE));
+  const overdueCurrentPage = Math.min(overduePage, overdueTotalPages);
+  const overdueStartIndex = (overdueCurrentPage - 1) * ALERT_PAGE_SIZE;
+  const visibleOverdueComplaints = overdueComplaints.slice(
+    overdueStartIndex,
+    overdueStartIndex + ALERT_PAGE_SIZE
+  );
+
+  useEffect(() => {
+    setDueSoonPage(1);
+  }, [dueSoonComplaints.length]);
+
+  useEffect(() => {
+    setOverduePage(1);
+  }, [overdueComplaints.length]);
+
   const searchResults = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
     if (!keyword) return [];
@@ -172,6 +207,13 @@ export default function AdminDashboardPage() {
         <AdminTopBar user={user} />
 
         <div className="mx-auto max-w-[1180px] space-y-lg p-xl">
+          <header>
+            <h1 className="text-display-sm font-bold text-on-surface">Complaints</h1>
+            <p className="mt-1 text-body-md text-secondary">
+              Monitor complaint volume, workflow status, SLA risk, and recent activity.
+            </p>
+          </header>
+
           <section className="rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm">
             <label className="relative block">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[22px] text-slate-400">
@@ -255,36 +297,65 @@ export default function AdminDashboardPage() {
                 No complaints are within the next 72-hour expiry window.
               </p>
             ) : (
-              <div className="divide-y divide-amber-100">
-                {dueSoonComplaints.map((complaint) => (
-                  <div
-                    key={complaint.apiId}
-                    className="grid grid-cols-1 gap-sm px-lg py-md md:grid-cols-[1fr_0.7fr_0.55fr_0.55fr_auto] md:items-center"
-                  >
-                    <div>
-                      <p className="text-body-sm text-amber-700">{complaint.id}</p>
-                      <p className="text-body-lg font-semibold text-on-surface">{complaint.title}</p>
-                    </div>
-                    <div>
-                      <p className="text-body-md text-on-surface">{complaint.customer}</p>
-                      <p className="text-body-sm text-secondary">{complaint.email}</p>
-                    </div>
-                    <span className="w-fit rounded-full bg-amber-100 px-sm py-xxs text-body-sm font-semibold text-amber-800">
-                      {complaint.hoursToSla}h left
-                    </span>
-                    <span className="w-fit rounded-full bg-slate-100 px-sm py-xxs text-body-sm font-semibold text-secondary">
-                      {complaint.status}
-                    </span>
-                    <Link
-                      to={ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", complaint.slug)}
-                      className="inline-flex items-center justify-center gap-xs rounded-[0.5rem] border border-amber-200 px-sm py-xs text-button text-amber-800 transition hover:bg-amber-50"
+              <>
+                <div className="divide-y divide-amber-100">
+                  {visibleDueSoonComplaints.map((complaint) => (
+                    <div
+                      key={complaint.apiId}
+                      className="grid grid-cols-1 gap-sm px-lg py-md md:grid-cols-[1fr_0.7fr_0.55fr_0.55fr_auto] md:items-center"
                     >
-                      Review
-                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                    </Link>
+                      <div>
+                        <p className="text-body-sm text-amber-700">{complaint.id}</p>
+                        <p className="text-body-lg font-semibold text-on-surface">{complaint.title}</p>
+                      </div>
+                      <div>
+                        <p className="text-body-md text-on-surface">{complaint.customer}</p>
+                        <p className="text-body-sm text-secondary">{complaint.email}</p>
+                      </div>
+                      <span className="w-fit rounded-full bg-amber-100 px-sm py-xxs text-body-sm font-semibold text-amber-800">
+                        {complaint.hoursToSla}h left
+                      </span>
+                      <span className="w-fit rounded-full bg-slate-100 px-sm py-xxs text-body-sm font-semibold text-secondary">
+                        {complaint.status}
+                      </span>
+                      <Link
+                        to={ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", complaint.slug)}
+                        className="inline-flex items-center justify-center gap-xs rounded-[0.5rem] border border-amber-200 px-sm py-xs text-button text-amber-800 transition hover:bg-amber-50"
+                      >
+                        Review
+                        <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+                {dueSoonComplaints.length > ALERT_PAGE_SIZE ? (
+                  <div className="flex flex-wrap items-center justify-between gap-sm border-t border-amber-100 px-lg py-md">
+                    <p className="text-body-sm text-amber-700">
+                      Showing {dueSoonStartIndex + 1}-
+                      {Math.min(dueSoonStartIndex + ALERT_PAGE_SIZE, dueSoonComplaints.length)} of{" "}
+                      {dueSoonComplaints.length}
+                    </p>
+                    <div className="flex gap-xs">
+                      <button
+                        type="button"
+                        onClick={() => setDueSoonPage((value) => Math.max(1, value - 1))}
+                        disabled={dueSoonCurrentPage === 1}
+                        className="rounded-[0.5rem] border border-amber-200 px-sm py-xs text-body-sm font-semibold text-amber-800 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:text-amber-300"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDueSoonPage((value) => Math.min(dueSoonTotalPages, value + 1))}
+                        disabled={dueSoonCurrentPage === dueSoonTotalPages}
+                        className="rounded-[0.5rem] border border-amber-200 px-sm py-xs text-body-sm font-semibold text-amber-800 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:text-amber-300"
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
-                ))}
-              </div>
+                ) : null}
+              </>
             )}
           </section>
 
@@ -308,36 +379,65 @@ export default function AdminDashboardPage() {
                 No overdue complaints at the moment.
               </p>
             ) : (
-              <div className="divide-y divide-red-100">
-                {overdueComplaints.map((complaint) => (
-                  <div
-                    key={complaint.apiId}
-                    className="grid grid-cols-1 gap-sm px-lg py-md md:grid-cols-[1fr_0.7fr_0.55fr_0.55fr_auto] md:items-center"
-                  >
-                    <div>
-                      <p className="text-body-sm text-red-700">{complaint.id}</p>
-                      <p className="text-body-lg font-semibold text-on-surface">{complaint.title}</p>
-                    </div>
-                    <div>
-                      <p className="text-body-md text-on-surface">{complaint.customer}</p>
-                      <p className="text-body-sm text-secondary">{complaint.email}</p>
-                    </div>
-                    <span className="w-fit rounded-full bg-red-100 px-sm py-xxs text-body-sm font-semibold text-red-700">
-                      {complaint.daysOpen} days open
-                    </span>
-                    <span className="w-fit rounded-full bg-slate-100 px-sm py-xxs text-body-sm font-semibold text-secondary">
-                      {complaint.status}
-                    </span>
-                    <Link
-                      to={ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", complaint.slug)}
-                      className="inline-flex items-center justify-center gap-xs rounded-[0.5rem] border border-red-200 px-sm py-xs text-button text-red-700 transition hover:bg-red-50"
+              <>
+                <div className="divide-y divide-red-100">
+                  {visibleOverdueComplaints.map((complaint) => (
+                    <div
+                      key={complaint.apiId}
+                      className="grid grid-cols-1 gap-sm px-lg py-md md:grid-cols-[1fr_0.7fr_0.55fr_0.55fr_auto] md:items-center"
                     >
-                      Resolve now
-                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                    </Link>
+                      <div>
+                        <p className="text-body-sm text-red-700">{complaint.id}</p>
+                        <p className="text-body-lg font-semibold text-on-surface">{complaint.title}</p>
+                      </div>
+                      <div>
+                        <p className="text-body-md text-on-surface">{complaint.customer}</p>
+                        <p className="text-body-sm text-secondary">{complaint.email}</p>
+                      </div>
+                      <span className="w-fit rounded-full bg-red-100 px-sm py-xxs text-body-sm font-semibold text-red-700">
+                        {complaint.daysOpen} days open
+                      </span>
+                      <span className="w-fit rounded-full bg-slate-100 px-sm py-xxs text-body-sm font-semibold text-secondary">
+                        {complaint.status}
+                      </span>
+                      <Link
+                        to={ROUTE_PATHS.adminComplaintDetail.replace(":complaintId", complaint.slug)}
+                        className="inline-flex items-center justify-center gap-xs rounded-[0.5rem] border border-red-200 px-sm py-xs text-button text-red-700 transition hover:bg-red-50"
+                      >
+                        Resolve now
+                        <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+                {overdueComplaints.length > ALERT_PAGE_SIZE ? (
+                  <div className="flex flex-wrap items-center justify-between gap-sm border-t border-red-100 px-lg py-md">
+                    <p className="text-body-sm text-red-700">
+                      Showing {overdueStartIndex + 1}-
+                      {Math.min(overdueStartIndex + ALERT_PAGE_SIZE, overdueComplaints.length)} of{" "}
+                      {overdueComplaints.length}
+                    </p>
+                    <div className="flex gap-xs">
+                      <button
+                        type="button"
+                        onClick={() => setOverduePage((value) => Math.max(1, value - 1))}
+                        disabled={overdueCurrentPage === 1}
+                        className="rounded-[0.5rem] border border-red-200 px-sm py-xs text-body-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:text-red-300"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOverduePage((value) => Math.min(overdueTotalPages, value + 1))}
+                        disabled={overdueCurrentPage === overdueTotalPages}
+                        className="rounded-[0.5rem] border border-red-200 px-sm py-xs text-body-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:text-red-300"
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
-                ))}
-              </div>
+                ) : null}
+              </>
             )}
           </section>
 

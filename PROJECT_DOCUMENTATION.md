@@ -313,9 +313,9 @@ spring.sql.init.mode=always
 ```
 
 Seed data includes:
-- 2 admin accounts.
-- 28 customer accounts.
-- 50 demo complaints distributed across `PENDING`, `VALIDATING`, `RESOLVING`, and `RESOLVED`.
+- 1 admin account.
+- 100 customer accounts.
+- 100 demo complaints distributed across `PENDING`, `VALIDATING`, `RESOLVING`, and `RESOLVED`.
 - Validation records for validated and rejected demo complaints.
 
 All seed accounts use:
@@ -324,13 +324,21 @@ All seed accounts use:
 password123
 ```
 
-Seed accounts:
+Admin accounts:
 
-| Email | Role |
-|-------|------|
-| `admin@test.com` | ADMIN |
-| `agent@test.com` | ADMIN |
-| `customer01@test.com` through `customer28@test.com` | CUSTOMER |
+| Email | Role | Name |
+|-------|------|------|
+| `admin@test.com` | ADMIN | Admin User |
+
+Customer accounts (100 total):
+
+| Email | Role | Name |
+|-------|------|------|
+| `customer001@gmail.com` | CUSTOMER | Customer 001 |
+| `customer002@gmail.com` | CUSTOMER | Customer 002 |
+| `customer003@gmail.com` | CUSTOMER | Customer 003 |
+| … | … | … |
+| `customer100@gmail.com` | CUSTOMER | Customer 100 |
 
 Priority in seed:
 - `PENDING` and `VALIDATING` complaints have no priority.
@@ -371,6 +379,17 @@ DB_URL
 DB_USERNAME
 DB_PASSWORD
 ```
+
+#### OpenAI API key
+
+Create `backend/.env` (git-ignored) with your key:
+
+```env
+OPENAI_API_KEY=your-openai-api-key-here
+```
+
+This key is used by the AI Insights section on the Analysis page.
+The model used is `gpt-5-mini` with `max_completion_tokens = 16000`.
 
 ## 12. Running the Project
 
@@ -460,21 +479,27 @@ Priority:
 1. Install Java, Maven, PostgreSQL, and Node.js.
 2. Create PostgreSQL database `db`.
 3. Confirm backend DB credentials in `application.properties`.
-4. Run backend seed profile:
+4. Create `backend/.env` and add your OpenAI API key:
+
+   ```env
+   OPENAI_API_KEY=your-openai-api-key-here
+   ```
+
+5. Run backend seed profile to load demo data:
 
    ```powershell
    cd backend
    mvn spring-boot:run "-Dspring-boot.run.profiles=seed"
    ```
 
-5. Stop backend after seed startup completes.
-6. Start backend normally:
+6. Stop backend after seed startup completes.
+7. Start backend normally:
 
    ```powershell
    mvn spring-boot:run
    ```
 
-7. Start frontend:
+8. Start frontend:
 
    ```powershell
    cd ../frontend
@@ -482,20 +507,16 @@ Priority:
    npm run dev
    ```
 
-8. Login with:
+9. Open `http://localhost:5173` and login with one of the demo accounts:
 
-   ```text
-   admin@test.com / password123
-   ```
+   | Account | Email | Password |
+   |---------|-------|----------|
+   | Admin | `admin@test.com` | `password123` |
+   | Customer | `customer001@gmail.com` | `password123` |
+   | Customer | `customer002@gmail.com` | `password123` |
 
-   or
-
-   ```text
-   customer01@test.com / password123
-   ```
-
-9. Validate the app:
-   - Customer can submit a complaint.
-   - Admin can receive, validate, resolve, and complete complaints.
-   - Admin can view rejected complaints as validation-invalid resolved records.
-   - Admin can view user management and analysis pages.
+10. Validate the app:
+    - Customer can submit a complaint.
+    - Admin can receive, validate, resolve, and complete complaints.
+    - Admin can view rejected complaints as validation-invalid resolved records.
+    - Admin can view user management and analysis pages (AI Insights requires a valid OpenAI API key).

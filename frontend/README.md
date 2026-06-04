@@ -27,20 +27,15 @@ npm run build
 
 All test accounts use the password `password123`.
 
-| Role | Email |
-|------|-------|
-| Admin | `admin@test.com` |
-| Admin | `agent@test.com` |
-| Customer | `alice@test.com` |
-| Customer | `bob@test.com` |
-| Customer | `charlie@test.com` |
-| Customer | `diana@test.com` |
-| Customer | `edward@test.com` |
-| Customer | `fiona@test.com` |
-| Customer | `george@test.com` |
-| Customer | `hannah@test.com` |
-| Customer | `ivan@test.com` |
-| Customer | `julia@test.com` |
+> Load seed data first: `cd backend && mvn spring-boot:run "-Dspring-boot.run.profiles=seed"`
+
+| Role | Email | Notes |
+|------|-------|-------|
+| Admin | `admin@test.com` | Full admin access |
+| Customer | `customer001@gmail.com` | Sample customer |
+| Customer | `customer002@gmail.com` | Sample customer |
+| Customer | `customer003@gmail.com` | Sample customer |
+| Customer | `customer001@gmail.com` → `customer100@gmail.com` | 100 accounts total |
 
 ## Main Routes
 
@@ -49,14 +44,20 @@ All test accounts use the password `password123`.
 /register
 /customer/dashboard
 /customer/complaints/new
+/customer/complaints
 /customer/notifications
 /customer/profile
 /admin/dashboard
-/admin/tiep-nhan
-/admin/xem-xet
-/admin/xu-ly
-/admin/phan-hoi
+/admin/analysis
 /admin/users
+/admin/receive
+/admin/validate
+/admin/process
+/admin/response
+/admin/complaints/all
+/admin/complaints/pending
+/admin/complaints/resolved
+/admin/complaints/rejected
 ```
 
 Authentication, complaints, attachments, workflow transitions, account listing,

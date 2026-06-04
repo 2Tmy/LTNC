@@ -4,37 +4,85 @@ TRUNCATE TABLE users CASCADE;
 -- All test accounts use the password: password123
 -- BCrypt hash (cost 10): $2a$10$lncCO7RiUFbe4cCEBkXdpeBJTFjAoHKlewgHW3kUhKsV9vouKOWrq
 
-INSERT INTO users (name, email, phone, password, role, enabled, created_at, updated_at) VALUES
-    ('Admin User', 'admin@test.com', '0900000001', '$2a$10$lncCO7RiUFbe4cCEBkXdpeBJTFjAoHKlewgHW3kUhKsV9vouKOWrq', 'ADMIN', true, NOW() - INTERVAL '90 days', NOW()),
-    ('Support Agent', 'agent@test.com', '0900000002', '$2a$10$lncCO7RiUFbe4cCEBkXdpeBJTFjAoHKlewgHW3kUhKsV9vouKOWrq', 'ADMIN', true, NOW() - INTERVAL '88 days', NOW());
-
+WITH seed_window AS (
+    SELECT
+        (DATE_TRUNC('year', CURRENT_DATE)::date + INTERVAL '2 months') AS start_at,
+        GREATEST(
+            (CURRENT_DATE - (DATE_TRUNC('year', CURRENT_DATE)::date + INTERVAL '2 months')::date),
+            1
+        ) AS span_days
+)
 INSERT INTO users (name, email, phone, password, role, enabled, created_at, updated_at)
 SELECT
-    'Customer ' || LPAD(n::text, 2, '0'),
-    'customer' || LPAD(n::text, 2, '0') || '@test.com',
-    '09' || LPAD((10000000 + n)::text, 8, '0'),
+    'Admin User',
+    'admin@test.com',
+    '0900000001',
+    '$2a$10$lncCO7RiUFbe4cCEBkXdpeBJTFjAoHKlewgHW3kUhKsV9vouKOWrq',
+    'ADMIN',
+    true,
+    start_at,
+    NOW()
+FROM seed_window;
+
+WITH seed_window AS (
+    SELECT
+        (DATE_TRUNC('year', CURRENT_DATE)::date + INTERVAL '2 months') AS start_at,
+        GREATEST(
+            (CURRENT_DATE - (DATE_TRUNC('year', CURRENT_DATE)::date + INTERVAL '2 months')::date),
+            1
+        ) AS span_days
+)
+INSERT INTO users (name, email, phone, password, role, enabled, created_at, updated_at)
+SELECT
+    'Customer ' || LPAD(n::text, 3, '0'),
+    'customer' || LPAD(n::text, 3, '0') || '@gmail.com',
+    '09' || LPAD((20000000 + n)::text, 8, '0'),
     '$2a$10$lncCO7RiUFbe4cCEBkXdpeBJTFjAoHKlewgHW3kUhKsV9vouKOWrq',
     'CUSTOMER',
     true,
-    NOW() - ((60 - n) || ' days')::interval,
+    start_at + (FLOOR(((n - 1) * span_days)::numeric / 99)::int || ' days')::interval,
     NOW()
-FROM generate_series(1, 28) AS n;
+FROM generate_series(1, 100) AS n
+CROSS JOIN seed_window;
 
-WITH admin_user AS (
-    SELECT id FROM users WHERE email = 'admin@test.com'
+WITH seed_window AS (
+    SELECT
+        (DATE_TRUNC('year', CURRENT_DATE)::date + INTERVAL '2 months') AS start_at,
+        GREATEST(
+            (CURRENT_DATE - (DATE_TRUNC('year', CURRENT_DATE)::date + INTERVAL '2 months')::date),
+            1
+        ) AS span_days
 ),
-agent_user AS (
-    SELECT id FROM users WHERE email = 'agent@test.com'
+admin_user AS (
+    SELECT id FROM users WHERE email = 'admin@test.com'
 ),
 seed_rows AS (
     SELECT
         n,
         CASE
-            WHEN n % 10 = 0 THEN 'RESOLVED'
-            ELSE (ARRAY['PENDING', 'VALIDATING', 'RESOLVING', 'RESOLVED'])[((n - 1) % 4) + 1]
+            WHEN n <= 68 THEN
+                start_at + (FLOOR(((n - 1) * span_days)::numeric / 99)::int || ' days')::interval
+            WHEN n <= 76 THEN
+                CURRENT_DATE - ((16 + ((n - 69) % 6)) || ' days')::interval
+            WHEN n <= 84 THEN
+                CURRENT_DATE - ((12 + ((n - 77) % 2)) || ' days')::interval
+            ELSE
+                CURRENT_DATE - (((n - 85) % 8) || ' days')::interval
+        END + (((n * 17) % 9) || ' hours')::interval AS submitted_time,
+        CASE
+            WHEN n <= 68 THEN 'RESOLVED'
+            WHEN n <= 80 THEN 'RESOLVING'
+            WHEN n <= 90 THEN 'VALIDATING'
+            ELSE 'PENDING'
         END AS status,
-        (n % 10 = 0) AS is_rejected,
-        (ARRAY['PRODUCT', 'SERVICE', 'DELIVERY', 'BILLING', 'OTHER'])[((n - 1) % 5) + 1] AS category,
+        n IN (10, 18, 26, 34, 42, 50, 58, 66) AS is_rejected,
+        CASE
+            WHEN n % 10 IN (1, 2, 3, 4) THEN 'DELIVERY'
+            WHEN n % 10 IN (5, 6) THEN 'PRODUCT'
+            WHEN n % 10 IN (7, 8) THEN 'BILLING'
+            WHEN n % 10 = 9 THEN 'SERVICE'
+            ELSE 'OTHER'
+        END AS category,
         (ARRAY['LOW', 'MEDIUM', 'HIGH', 'URGENT'])[((n - 1) % 4) + 1] AS priority,
         (ARRAY[
             'Missing item from package',
@@ -46,9 +94,16 @@ seed_rows AS (
             'Warranty request not processed',
             'Duplicate charge on card',
             'Courier marked delivered incorrectly',
-            'Replacement item has not shipped'
-        ])[((n - 1) % 10) + 1] AS title
-    FROM generate_series(1, 50) AS n
+            'Replacement item has not shipped',
+            'Invoice information is incorrect',
+            'Account support request delayed',
+            'Promotion code was not applied',
+            'Return pickup was missed',
+            'Product quality does not match description'
+        ])[((n - 1) % 15) + 1] AS title,
+        (((n * 37) % 80) + 1) AS customer_number
+    FROM generate_series(1, 100) AS n
+    CROSS JOIN seed_window
 )
 INSERT INTO complaints (
     complaint_code, customer_id, title, description, order_id, phone,
@@ -60,52 +115,52 @@ INSERT INTO complaints (
     edit_count, edit_deadline
 )
 SELECT
-    'RC-' || TO_CHAR(CURRENT_DATE - (seed.n || ' days')::interval, 'YYYYMMDD') || '-' || LPAD(seed.n::text, 4, '0'),
+    'RC-' || TO_CHAR(seed.submitted_time, 'YYYYMMDD') || '-' || LPAD(seed.n::text, 4, '0'),
     customer.id,
     seed.title,
     '[' || seed.category || ' Complaint]' || E'\n\n' ||
-        'Demo complaint #' || seed.n || ' for order ORD-2026-' || LPAD((7000 + seed.n)::text, 4, '0') ||
+        'Demo complaint #' || seed.n || ' for order ORD-2026-' || LPAD((9000 + seed.n)::text, 4, '0') ||
         '. The customer reports that the issue affected their order experience and requests a review from support.',
-    'ORD-2026-' || LPAD((7000 + seed.n)::text, 4, '0'),
+    'ORD-2026-' || LPAD((9000 + seed.n)::text, 4, '0'),
     customer.phone,
     seed.category,
     CASE WHEN seed.status IN ('RESOLVING', 'RESOLVED') AND NOT seed.is_rejected THEN seed.priority ELSE NULL END,
     seed.status,
     CASE WHEN seed.status IN ('VALIDATING', 'RESOLVING', 'RESOLVED') THEN admin_user.id ELSE NULL END,
-    CASE WHEN seed.status IN ('RESOLVING', 'RESOLVED') AND NOT seed.is_rejected THEN agent_user.id ELSE NULL END,
+    NULL,
     CASE WHEN seed.status = 'RESOLVED' THEN admin_user.id ELSE NULL END,
+    NULL,
     CASE
         WHEN seed.status IN ('RESOLVING', 'RESOLVED') AND NOT seed.is_rejected
-            THEN 'Support reviewed order records, customer evidence, payment events, and delivery tracking for this complaint.'
-        ELSE NULL
-    END,
-    CASE
-        WHEN seed.status IN ('RESOLVING', 'RESOLVED') AND NOT seed.is_rejected
-            THEN 'The issue was caused by an operational mismatch between order fulfillment data and downstream processing.'
+            THEN 'Operational data did not match the expected customer order state.'
         ELSE NULL
     END,
     CASE
         WHEN seed.is_rejected
             THEN 'Complaint was rejected during validation because it did not meet handling criteria.'
         WHEN seed.status = 'RESOLVING'
-            THEN 'A proposed resolution has been prepared and is waiting for final customer communication.'
+            THEN 'A resolution is being prepared based on the validated root cause.'
         WHEN seed.status = 'RESOLVED'
-            THEN 'The customer was compensated or the order issue was corrected according to policy.'
+            THEN 'The customer received a policy-aligned resolution for the reported issue.'
         ELSE NULL
     END,
-    NOW() - (seed.n || ' days')::interval,
-    NOW() - (GREATEST(seed.n - 3, 0) || ' days')::interval,
-    NOW() - (seed.n || ' days')::interval,
-    CASE WHEN seed.status IN ('VALIDATING', 'RESOLVING', 'RESOLVED') THEN NOW() - (GREATEST(seed.n - 1, 0) || ' days')::interval ELSE NULL END,
-    CASE WHEN seed.status IN ('RESOLVING', 'RESOLVED') AND NOT seed.is_rejected THEN NOW() - (GREATEST(seed.n - 2, 0) || ' days')::interval ELSE NULL END,
-    CASE WHEN seed.status = 'RESOLVED' THEN NOW() - (GREATEST(seed.n - 4, 0) || ' days')::interval ELSE NULL END,
+    seed.submitted_time,
+    CASE
+        WHEN seed.status = 'PENDING' THEN seed.submitted_time
+        WHEN seed.status = 'VALIDATING' THEN seed.submitted_time + INTERVAL '1 day'
+        WHEN seed.status = 'RESOLVING' THEN seed.submitted_time + INTERVAL '3 days'
+        ELSE LEAST(seed.submitted_time + INTERVAL '8 days', NOW())
+    END,
+    seed.submitted_time,
+    CASE WHEN seed.status IN ('VALIDATING', 'RESOLVING', 'RESOLVED') THEN seed.submitted_time + INTERVAL '1 day' ELSE NULL END,
+    NULL,
+    CASE WHEN seed.status = 'RESOLVED' THEN LEAST(seed.submitted_time + INTERVAL '8 days', NOW()) ELSE NULL END,
     0,
     NULL
 FROM seed_rows seed
 JOIN users customer
-    ON customer.email = 'customer' || LPAD((((seed.n - 1) % 28) + 1)::text, 2, '0') || '@test.com'
-CROSS JOIN admin_user
-CROSS JOIN agent_user;
+    ON customer.email = 'customer' || LPAD(seed.customer_number::text, 3, '0') || '@gmail.com'
+CROSS JOIN admin_user;
 
 INSERT INTO complaint_validations (
     complaint_id, validated_by, validation_status,

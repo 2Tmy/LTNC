@@ -207,6 +207,7 @@ export default function AdminUsersPage() {
   const [loadError, setLoadError] = useState("");
   const [adminPage, setAdminPage] = useState(1);
   const [customerPage, setCustomerPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -229,12 +230,32 @@ export default function AdminUsersPage() {
     loadUsers();
   }, []);
 
+  const filteredAccounts = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+
+    if (!keyword) return accounts;
+
+    return accounts.filter((account) =>
+      [
+        account.id,
+        account.userId,
+        account.name,
+        account.email,
+        account.phone,
+        account.role,
+        account.enabled ? "active" : "disabled",
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword))
+    );
+  }, [accounts, searchTerm]);
+
   const groupedUsers = useMemo(
     () => ({
-      admins: accounts.filter((account) => account.role === "ADMIN"),
-      customers: accounts.filter((account) => account.role === "CUSTOMER"),
+      admins: filteredAccounts.filter((account) => account.role === "ADMIN"),
+      customers: filteredAccounts.filter((account) => account.role === "CUSTOMER"),
     }),
-    [accounts]
+    [filteredAccounts]
   );
 
   return (
@@ -251,6 +272,28 @@ export default function AdminUsersPage() {
               Manage customer and admin accounts in the resolution system.
             </p>
           </div>
+
+          <section className="rounded-[0.75rem] border border-outline-variant bg-white p-lg shadow-sm">
+            <label className="relative block">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[22px] text-slate-400">
+                search
+              </span>
+              <input
+                className="h-12 w-full rounded-[0.5rem] border border-slate-200 bg-white pl-11 pr-4 text-body-md text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                type="search"
+                value={searchTerm}
+                onChange={(event) => {
+                  setSearchTerm(event.target.value);
+                  setAdminPage(1);
+                  setCustomerPage(1);
+                }}
+                placeholder="Search user name, email, phone, role, or status..."
+              />
+            </label>
+            <p className="mt-sm text-body-sm text-secondary">
+              Showing {filteredAccounts.length} of {accounts.length} accounts
+            </p>
+          </section>
 
           <UserTable
             title="Admin Accounts"

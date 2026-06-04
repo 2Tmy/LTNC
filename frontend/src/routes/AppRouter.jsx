@@ -12,11 +12,12 @@ import RegisterPage from "../pages/auth/RegisterPage.jsx";
 import AdminDashboardPage from "../pages/admin/dashboard/AdminDashboardPage.jsx";
 import ReceiveComplaintsPage from "../pages/admin/customer-service/ReceiveComplaintsPage.jsx";
 import AdminComplaintDetailPage from "../pages/admin/customer-service/AdminComplaintDetailPage.jsx";
-import XemXetPage from "../pages/admin/process/XemXetPage.jsx";
-import XuLyPage from "../pages/admin/process/XuLyPage.jsx";
+import ValidateComplaintsPage from "../pages/admin/process/ValidateComplaintsPage.jsx";
+import ProcessComplaintsPage from "../pages/admin/process/ProcessComplaintsPage.jsx";
+import ResponseComplaintsPage from "../pages/admin/process/ResponseComplaintsPage.jsx";
 import AdminUsersPage from "../pages/admin/users/AdminUsersPage.jsx";
 import AdminComplaintsListPage from "../pages/admin/complaints/AdminComplaintsListPage.jsx";
-import ComplaintAnalysisPage from "../pages/admin/analysis/ComplaintAnalysisPage.jsx";
+import AnalysisPage from "../pages/admin/AnalysisPage.jsx";
 import { ProtectedRoute, RoleRedirect } from "./protectedRoutes.jsx";
 import { ROUTE_PATHS, USER_ROLES } from "./routePaths.js";
 
@@ -41,15 +42,15 @@ export default function AppRouter() {
         {/* Admin routes */}
         <Route element={<ProtectedRoute allowedRoles={[USER_ROLES.admin]} />}>
           <Route path={ROUTE_PATHS.adminDashboard} element={<AdminDashboardPage />} />
-          <Route path={ROUTE_PATHS.adminAnalysis} element={<ComplaintAnalysisPage />} />
+          <Route path={ROUTE_PATHS.adminAnalysis} element={<AnalysisPage />} />
           <Route path={ROUTE_PATHS.adminComplaintsAll} element={<AdminComplaintsListPage type="all" />} />
           <Route path={ROUTE_PATHS.adminComplaintsPending} element={<AdminComplaintsListPage type="pending" />} />
           <Route path={ROUTE_PATHS.adminComplaintsResolved} element={<AdminComplaintsListPage type="resolved" />} />
           <Route path={ROUTE_PATHS.adminComplaintsRejected} element={<AdminComplaintsListPage type="rejected" />} />
           <Route path={ROUTE_PATHS.adminReceive} element={<ReceiveComplaintsPage />} />
-          <Route path={ROUTE_PATHS.adminReview} element={<XemXetPage />} />
-          <Route path={ROUTE_PATHS.adminProcess} element={<XuLyPage />} />
-          <Route path={ROUTE_PATHS.adminResponse} element={<AdminComplaintsListPage type="resolved" />} />
+          <Route path={ROUTE_PATHS.adminReview} element={<ValidateComplaintsPage />} />
+          <Route path={ROUTE_PATHS.adminProcess} element={<ProcessComplaintsPage />} />
+          <Route path={ROUTE_PATHS.adminResponse} element={<ResponseComplaintsPage />} />
           <Route path={ROUTE_PATHS.adminComplaintDetail} element={<AdminComplaintDetailPage />} />
           <Route path={ROUTE_PATHS.adminUsers} element={<AdminUsersPage />} />
         </Route>

@@ -10,9 +10,9 @@ const processSteps = [
 ];
 
 const mainNavItems = [
-  { label: "Dashboard", icon: "dashboard", to: ROUTE_PATHS.adminDashboard },
-  { label: "Analysis", icon: "analytics", to: ROUTE_PATHS.adminAnalysis },
+  { label: "Complaints", icon: "dashboard", to: ROUTE_PATHS.adminDashboard },
   { label: "Users", icon: "groups", to: ROUTE_PATHS.adminUsers },
+  { label: "Analysis", icon: "analytics", to: ROUTE_PATHS.adminAnalysis },
 ];
 
 export default function AdminSidebar() {

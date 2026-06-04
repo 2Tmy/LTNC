@@ -150,16 +150,29 @@ Run the `seed` profile when you explicitly want to reset the local database and 
 Normal startup preserves existing data because `spring.sql.init.mode=never` in the default profile.
 **All test accounts use the password `password123`.**
 
+#### Admin accounts
+
+| Email | Role | Name |
+|-------|------|------|
+| `admin@test.com` | ADMIN | Admin User |
+
+#### Customer accounts
+
+100 customer accounts are seeded, following the pattern below:
+
 | Email pattern | Role | Name pattern |
 |---------------|------|--------------|
-| admin@test.com | ADMIN | Admin User |
-| agent@test.com | ADMIN | Support Agent |
-| customer01@test.com through customer28@test.com | CUSTOMER | Customer 01 through Customer 28 |
+| `customer001@gmail.com` | CUSTOMER | Customer 001 |
+| `customer002@gmail.com` | CUSTOMER | Customer 002 |
+| … | … | … |
+| `customer100@gmail.com` | CUSTOMER | Customer 100 |
 
-The seed inserts 50 demo complaints assigned across the generated customers and covering the four complaint statuses:
+#### Sample complaints
+
+100 demo complaints are distributed across the four statuses:
 `PENDING`, `VALIDATING`, `RESOLVING`, `RESOLVED`.
 
-Rejected demo complaints are stored as `RESOLVED` complaints with `validation_status = 'INVALID'` and a rejection reason.
+Rejected complaints are stored as `RESOLVED` with `validation_status = 'INVALID'` and a rejection reason.
 
 To run the seed from PowerShell:
 
@@ -209,14 +222,21 @@ SELECT status, COUNT(*) FROM complaints GROUP BY status ORDER BY status;
 
 ### Backend
 
+#### 1. Configure environment variables
+
+Create a file `backend/.env` with your OpenAI API key (this file is git-ignored):
+
+```env
+OPENAI_API_KEY=your-openai-api-key-here
+```
+
+#### 2. Run the backend
+
 Open a terminal and run:
 
 ```powershell
-# Windows — set JAVA_HOME if not configured system-wide
-$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-25.0.2.10-hotspot"
-
 cd backend
-& "C:\Program Files\Apache\maven\bin\mvn.cmd" spring-boot:run
+mvn spring-boot:run
 ```
 
 Wait for:

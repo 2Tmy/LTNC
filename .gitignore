@@ -27,6 +27,8 @@ Thumbs.db
 # =========================
 backend/target/
 backend/uploads/
+backend/.env
+backend/.env.*
 *.class
 *.jar
 *.war
