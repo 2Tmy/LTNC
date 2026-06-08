@@ -14,6 +14,7 @@ export const ROUTE_PATHS = {
   // Admin — dashboard + 4 process steps + user management
   adminDashboard: "/admin/dashboard",
   adminAnalysis: "/admin/analysis",
+  adminNotifications: "/admin/notifications",
   adminComplaintsAll: "/admin/complaints/all",
   adminComplaintsPending: "/admin/complaints/pending",
   adminComplaintsResolved: "/admin/complaints/resolved",
@@ -38,5 +39,8 @@ export const BACKEND_ROLES = {
   admin: "ADMIN",
 };
 
-export const mapBackendRoleToRouteRole = (role) =>
-  role === BACKEND_ROLES.admin ? USER_ROLES.admin : USER_ROLES.customer;
+export const mapBackendRoleToRouteRole = (role) => {
+  if (role === BACKEND_ROLES.admin) return USER_ROLES.admin;
+  if (role === BACKEND_ROLES.customer) return USER_ROLES.customer;
+  return null;
+};

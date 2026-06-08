@@ -12,6 +12,7 @@ const processSteps = [
 const mainNavItems = [
   { label: "Complaints", icon: "dashboard", to: ROUTE_PATHS.adminDashboard },
   { label: "Users", icon: "groups", to: ROUTE_PATHS.adminUsers },
+  { label: "Notifications", icon: "notifications", to: ROUTE_PATHS.adminNotifications },
   { label: "Analysis", icon: "analytics", to: ROUTE_PATHS.adminAnalysis },
 ];
 

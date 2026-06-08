@@ -191,3 +191,23 @@ SELECT
 FROM complaints
 CROSS JOIN (SELECT id FROM users WHERE email = 'admin@test.com') AS admin_user
 WHERE complaints.status IN ('RESOLVING', 'RESOLVED');
+
+INSERT INTO complaint_feedbacks (
+    complaint_id, customer_id, rating, comment, created_at, updated_at
+)
+SELECT
+    complaints.id,
+    complaints.customer_id,
+    3 + (complaints.id % 3)::int,
+    CASE
+        WHEN complaints.id % 3 = 0 THEN 'The response was clear and the issue was handled well.'
+        WHEN complaints.id % 3 = 1 THEN 'The solution helped, but the process could have been faster.'
+        ELSE 'Satisfied with the final handling of this complaint.'
+    END,
+    complaints.resolved_at + INTERVAL '1 hour',
+    complaints.resolved_at + INTERVAL '1 hour'
+FROM complaints
+JOIN complaint_validations ON complaint_validations.complaint_id = complaints.id
+WHERE complaints.status = 'RESOLVED'
+  AND complaint_validations.validation_status = 'VALID'
+  AND complaints.id % 2 = 0;

@@ -22,5 +22,12 @@ public class AnalysisStatsDto {
     private Long activeCustomers;
     private Long customersWithComplaints;
     private Double avgComplaintsPerCustomer;
+
+    private Long totalFeedback;
+    private Double averageRating;
+    private Double feedbackRate;
+    private Long lowRatingCount;
+    private Map<Integer, Long> ratingDistribution;
+
     private List<MonthlyTrendDto> monthlyTrend;
 }

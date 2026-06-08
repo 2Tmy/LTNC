@@ -324,6 +324,36 @@ export default function AdminComplaintDetailPage() {
                 <EvidenceFileList files={complaint.evidence} />
               </section>
 
+              {complaint.feedback && (
+                <section className="rounded-xl border border-amber-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-sm font-semibold text-slate-700">Customer feedback</h2>
+                    <span className="text-xs text-slate-400">{complaint.feedback.submittedAt}</span>
+                  </div>
+                  <div className="mt-3 flex gap-0.5" aria-label={`${complaint.feedback.rating} out of 5 stars`}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span
+                        key={star}
+                        className={`material-symbols-outlined text-[24px] ${
+                          star <= complaint.feedback.rating ? "text-amber-400" : "text-slate-200"
+                        }`}
+                        style={{ fontVariationSettings: "'FILL' 1" }}
+                      >
+                        star
+                      </span>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-xs font-medium text-amber-700">
+                    {complaint.feedback.rating}/5 from {complaint.feedback.customerName}
+                  </p>
+                  {complaint.feedback.comment && (
+                    <p className="mt-3 whitespace-pre-line rounded-lg bg-slate-50 p-3 text-sm leading-relaxed text-slate-700">
+                      {complaint.feedback.comment}
+                    </p>
+                  )}
+                </section>
+              )}
+
             </aside>
           </div>
 

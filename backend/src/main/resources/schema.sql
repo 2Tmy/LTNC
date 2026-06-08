@@ -2,6 +2,7 @@
 -- and data.sql on startup, so tables are intentionally recreated.
 
 DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS complaint_feedbacks CASCADE;
 DROP TABLE IF EXISTS complaint_comments CASCADE;
 DROP TABLE IF EXISTS complaint_attachments CASCADE;
 DROP TABLE IF EXISTS complaint_histories CASCADE;
@@ -79,6 +80,27 @@ CREATE TABLE complaints (
 CREATE INDEX idx_complaints_customer ON complaints (customer_id);
 CREATE INDEX idx_complaints_status ON complaints (status);
 CREATE INDEX idx_complaints_code ON complaints (complaint_code);
+
+CREATE TABLE complaint_feedbacks (
+    id           BIGSERIAL NOT NULL,
+    complaint_id BIGINT    NOT NULL,
+    customer_id  BIGINT    NOT NULL,
+    rating       INTEGER   NOT NULL,
+    comment      TEXT,
+    created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT pk_complaint_feedbacks PRIMARY KEY (id),
+    CONSTRAINT uk_complaint_feedbacks_complaint UNIQUE (complaint_id),
+    CONSTRAINT fk_complaint_feedbacks_complaint
+        FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE,
+    CONSTRAINT fk_complaint_feedbacks_customer
+        FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT chk_complaint_feedbacks_rating CHECK (rating BETWEEN 1 AND 5)
+);
+
+CREATE INDEX idx_complaint_feedbacks_customer
+    ON complaint_feedbacks (customer_id, updated_at);
 
 CREATE TABLE complaint_validations (
     id                      BIGSERIAL   NOT NULL,
@@ -193,7 +215,7 @@ CREATE TABLE notifications (
     CONSTRAINT chk_notifications_type
         CHECK (type IN (
             'COMPLAINT_RECEIVED', 'VALIDATION_VALID', 'VALIDATION_REJECTED',
-            'VALIDATION_NEED_INFO', 'STATUS_CHANGE', 'NEW_COMMENT', 'ASSIGNED',
+            'VALIDATION_NEED_INFO', 'STATUS_CHANGE', 'NEW_COMMENT', 'CUSTOMER_FEEDBACK', 'ASSIGNED',
             'EDIT_REMINDER', 'EDIT_DEADLINE_PASSED'
         ))
 );

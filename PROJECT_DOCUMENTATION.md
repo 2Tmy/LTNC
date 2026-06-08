@@ -2,45 +2,60 @@
 
 ## 1. Project Overview
 
-This project is a full-stack Customer Complaint Management System.
+VISHIPEL is a full-stack Customer Complaint Management System with two roles:
 
-It supports:
-- Customer registration and login.
-- Customer complaint submission with evidence files.
-- Admin complaint intake, validation, resolving, response, user management, and analysis.
-- JWT-based authentication and role-based authorization.
+- `CUSTOMER`: submits complaints, tracks progress, receives resolutions, and rates results.
+- `ADMIN`: receives, validates, processes, resolves, and analyzes complaints.
 
-Main stack:
+The system includes:
+
+- JWT authentication and role-based authorization.
+- Complaint submission with evidence files.
+- A four-stage complaint workflow.
+- Validation rejection and successful resolution flows.
+- Customer and administrator notifications.
+- Customer feedback with 1-5 star ratings and comments.
+- Operational, SLA, user, and feedback analytics.
+- Optional OpenAI-generated insights triggered by an administrator.
+
+## 2. Technology Stack
 
 | Layer | Technology |
-|-------|------------|
+|---|---|
 | Frontend | React 19, Vite 6, Tailwind CSS |
-| Backend | Spring Boot 3.4.5, Java 17+ |
+| Charts | Recharts |
+| HTTP client | Axios |
+| Backend | Spring Boot 3.4.5, Java 17 |
 | Security | Spring Security 6, JWT, BCrypt |
-| Database | PostgreSQL |
-| ORM | Spring Data JPA / Hibernate |
-| API docs | SpringDoc Swagger UI |
+| Persistence | Spring Data JPA, Hibernate |
+| Database | PostgreSQL 14+ |
+| API documentation | SpringDoc OpenAPI 2.8.3 |
+| Backend build | Maven |
+| Frontend build | npm and Vite |
 
-## 2. Repository Structure
+## 3. Repository Structure
 
 ```text
-complaints/
+LTNC/
 |-- backend/
+|   |-- database/
+|   |   `-- add-complaint-feedbacks.sql
 |   |-- src/main/java/com/company/complaints/
-|   |   |-- config/          Security and OpenAPI configuration
-|   |   |-- controller/      REST controllers
+|   |   |-- config/          Security and application configuration
+|   |   |-- controller/      REST API controllers
 |   |   |-- dto/             Request and response DTOs
 |   |   |-- entity/          JPA entities
-|   |   |-- enums/           Domain enums
-|   |   |-- exception/       Exception handling
+|   |   |-- enums/           Domain enumerations
+|   |   |-- exception/       API exception handling
 |   |   |-- repository/      Spring Data repositories
-|   |   |-- security/        JWT authentication
-|   |   `-- service/         Business logic
-|   `-- src/main/resources/
-|       |-- application.properties
-|       |-- application-seed.properties
-|       |-- schema.sql
-|       `-- data.sql
+|   |   |-- security/        JWT filter and token provider
+|   |   `-- service/         Business rules
+|   |-- src/main/resources/
+|   |   |-- application.properties
+|   |   |-- application-seed.properties
+|   |   |-- schema.sql
+|   |   `-- data.sql
+|   `-- src/test/
 |-- frontend/
 |   |-- src/
 |   |   |-- components/
@@ -50,473 +65,639 @@ complaints/
 |   |   |-- routes/
 |   |   |-- services/
 |   |   `-- utils/
+|   |-- .env.example
+|   `-- vite.config.js
 |-- README.md
 `-- PROJECT_DOCUMENTATION.md
 ```
 
-## 3. Roles and Permissions
-
-| Role | Description |
-|------|-------------|
-| `CUSTOMER` | External user who submits complaints and tracks their own complaints. |
-| `ADMIN` | Internal user who receives, validates, resolves complaints, manages users, and views analysis. |
-
-Public registration always creates a `CUSTOMER`.
-Admin users are created through seed data or direct database insertion.
-
-Role checks are enforced in backend controllers with `@PreAuthorize`.
-
-Common examples:
-- `POST /api/complaints` requires `CUSTOMER`.
-- `GET /api/complaints` requires `ADMIN`.
-- `PUT /api/complaints/{id}/validate` requires `ADMIN`.
-- `GET /api/admin/users` requires `ADMIN`.
-
-## 4. Authentication and User Information
-
-Authentication uses JWT.
-
-Login flow:
-1. User submits email and password to `POST /api/auth/login`.
-2. Backend validates credentials.
-3. Backend returns a signed JWT.
-4. Frontend stores the token in local storage.
-5. `apiClient` sends the token as a Bearer token on protected requests.
-
-Registration flow:
-1. Customer submits name, email, password, and phone to `POST /api/auth/register`.
-2. Backend creates a `CUSTOMER` account.
-3. Backend returns a JWT immediately.
-
-User table:
-
-| Column | Purpose |
-|--------|---------|
-| `id` | Internal user ID. |
-| `name` | User display name. |
-| `email` | Login email, unique. |
-| `phone` | Contact phone. |
-| `password` | BCrypt password hash. |
-| `role` | `CUSTOMER` or `ADMIN`. |
-| `enabled` | Account active flag. |
-| `created_at` | Creation timestamp. |
-| `updated_at` | Last update timestamp. |
-
-Auth endpoints:
-
-| Method | Path | Access | Purpose |
-|--------|------|--------|---------|
-| `POST` | `/api/auth/register` | Public | Create a customer account. |
-| `POST` | `/api/auth/login` | Public | Login and receive JWT. |
-| `GET` | `/api/auth/me` | Authenticated | Get current user profile. |
-| `GET` | `/api/auth/check-role` | Authenticated | Return role flags. |
-| `GET` | `/api/auth/customer-only` | CUSTOMER | Role test endpoint. |
-| `GET` | `/api/auth/admin-only` | ADMIN | Role test endpoint. |
-
-Admin user endpoint:
-
-| Method | Path | Access | Purpose |
-|--------|------|--------|---------|
-| `GET` | `/api/admin/users` | ADMIN | Return all users for User Management. |
-
-The frontend User Management page separates admin accounts and customer accounts, and lets admins open a user detail panel.
-
-## 5. Complaint Domain Object
-
-The main complaint entity is `Complaint`.
-
-Important fields:
-
-| Field | Meaning |
-|-------|---------|
-| `id` | Internal complaint ID. |
-| `complaintCode` | Public complaint code, format `RC-YYYYMMDD-XXXX`. |
-| `customer` | User who submitted the complaint. |
-| `title` | Short complaint title. |
-| `description` | Full complaint description. |
-| `orderId` | Related order or tracking ID. |
-| `phone` | Contact phone for the complaint. |
-| `category` | `PRODUCT`, `SERVICE`, `DELIVERY`, `BILLING`, or `OTHER`. |
-| `priority` | `LOW`, `MEDIUM`, `HIGH`, or `URGENT`; null until admin validation. |
-| `status` | Complaint lifecycle status: `PENDING`, `VALIDATING`, `RESOLVING`, or `RESOLVED`. |
-| `validatedBy` | Admin who received/validated the complaint. |
-| `assignedTo` | Admin assigned to resolving. |
-| `approvedBy` | Admin who sent final response or completed rejection. |
-| `investigationSummary` | Internal investigation and handling summary. |
-| `rootCause` | Root cause found by admin. |
-| `resolution` | Customer-facing solution/response. |
-| `createdAt` | Creation timestamp. |
-| `submittedAt` | Submission timestamp. |
-| `validatedAt` | Validation timestamp. |
-| `assignedAt` | Resolving assignment timestamp. |
-| `resolvedAt` | Completion timestamp. |
-| `editCount` | Number of customer edits while the complaint is still pending. |
-| `editDeadline` | Optional deadline for customer edit. |
-
-Priority rule:
-- Customers do not set priority when submitting a complaint.
-- Priority is assigned only by admin during validation.
-- Complaints in `PENDING` or `VALIDATING` normally have `priority = null`.
-- Complaints in `RESOLVING` or successful `RESOLVED` normally have priority.
-
-Evidence:
-- Customers must upload at least one evidence file when creating a complaint.
-- Allowed file types: JPG, PNG, WEBP, PDF.
-- Max file size: 10 MB per file.
-- Files are stored under the configured upload directory.
-
-## 6. Complaint Status Model
-
-Complaints now have exactly four lifecycle statuses.
-
-| Status | Meaning |
-|--------|---------|
-| `PENDING` | Customer submitted the complaint; admin has not received it yet. |
-| `VALIDATING` | Admin received the complaint and checks whether it is valid. If invalid, admin can reject it. |
-| `RESOLVING` | Complaint is validated and admin is handling it, including investigation, root cause, and solution. |
-| `RESOLVED` | Complaint is completed. This includes successful resolutions and validation rejections. |
-
-Rejection is not a complaint status.
-Rejected complaints are stored as:
-- `complaints.status = 'RESOLVED'`
-- `complaint_validations.validation_status = 'INVALID'`
-- `complaint_validations.rejection_reason` contains the rejection reason.
-
-Frontend status display uses the same four labels:
-
-| Backend Status | Display Status |
-|----------------|----------------|
-| `PENDING` | `Pending` |
-| `VALIDATING` | `Validating` |
-| `RESOLVING` | `Resolving` |
-| `RESOLVED` | `Resolved` |
-
-Admin rejected pages filter by `validationStatus = INVALID`, while the status badge remains `Resolved`.
-
-## 7. Complaint Workflow
-
-Successful workflow:
+## 4. Runtime Architecture
 
 ```text
-PENDING -> VALIDATING -> RESOLVING -> RESOLVED
+Browser
+  |
+  | React SPA on http://localhost:5173
+  | JWT in Authorization: Bearer <token>
+  v
+Spring Boot REST API on http://localhost:8080
+  |
+  | Spring Data JPA / Hibernate
+  v
+PostgreSQL on localhost:5432
+
+Optional:
+Spring Boot -> OpenAI API when ADMIN requests AI Insights
 ```
 
-Rejected workflow:
+During local development, Vite proxies `/api` to `http://localhost:8080`.
+The production frontend can use `VITE_API_BASE_URL` to call a separately hosted backend.
 
-```text
-PENDING -> VALIDATING -> RESOLVED
+## 5. Environment Configuration
+
+### 5.1 Backend environment
+
+Create `backend/.env`. The `spring-dotenv` dependency loads this file locally.
+
+```env
+DB_URL=jdbc:postgresql://localhost:5432/db
+DB_USERNAME=postgres
+DB_PASSWORD=your-postgres-password
+
+JWT_SECRET=replace-this-with-a-long-random-secret-at-least-32-characters
+JWT_EXPIRATION=86400000
+
+OPENAI_API_KEY=
+OPENAI_API_URL=https://api.openai.com/v1/chat/completions
+OPENAI_MODEL=gpt-5-mini
+OPENAI_MAX_TOKENS=2500
+
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+COMPLAINTS_UPLOAD_DIR=uploads
+
+JPA_SHOW_SQL=false
+JPA_FORMAT_SQL=false
 ```
 
-Admin workflow pages:
+Supported backend settings:
 
-| Step | Route | Data shown |
-|------|-------|------------|
-| Receive | `/admin/receive` | `PENDING` complaints. |
-| Validate | `/admin/validate` | `VALIDATING` complaints with validation actions. |
-| Process | `/admin/process` | `RESOLVING` complaints. |
-| Response | `/admin/response` | Successfully `RESOLVED` complaints. |
+| Variable | Default | Purpose |
+|---|---|---|
+| `DB_URL` | `jdbc:postgresql://localhost:5432/db` | JDBC connection |
+| `DB_USERNAME` | `postgres` | Database user |
+| `DB_PASSWORD` | `1` | Local database password |
+| `JWT_SECRET` | Development fallback | JWT signing secret |
+| `JWT_EXPIRATION` | `86400000` | Token lifetime in milliseconds |
+| `OPENAI_API_KEY` | Empty | Optional OpenAI key |
+| `OPENAI_API_URL` | OpenAI chat completions URL | AI endpoint |
+| `OPENAI_MODEL` | `gpt-5-mini` | AI model |
+| `OPENAI_MAX_TOKENS` | `2500` | Maximum completion tokens |
+| `CORS_ALLOWED_ORIGINS` | Local frontend origins | Comma-separated origins |
+| `COMPLAINTS_UPLOAD_DIR` | `uploads` | Evidence storage directory |
+| `JPA_SHOW_SQL` | `false` | SQL logging |
+| `JPA_FORMAT_SQL` | `false` | Formatted SQL logging |
 
-Other admin complaint list routes:
+Real credentials must never be committed.
 
-| Route | Purpose |
-|-------|---------|
-| `/admin/complaints/all` | All complaints. |
-| `/admin/complaints/pending` | Unfinished complaints: `PENDING`, `VALIDATING`, `RESOLVING`. |
-| `/admin/complaints/resolved` | Successfully `RESOLVED` complaints. |
-| `/admin/complaints/rejected` | Complaints completed through validation rejection. |
+### 5.2 Frontend environment
 
-Validation actions:
-- Valid complaint: admin sets checklist and priority, then complaint moves to `RESOLVING`.
-- Invalid complaint: admin stores rejection reason and the complaint moves to `RESOLVED`.
+`frontend/.env.example` contains:
 
-Resolving actions:
-- Admin records root cause and solution while complaint is `RESOLVING`.
-- Admin sends final response.
-- Complaint moves to `RESOLVED` and `resolvedAt` is set.
-
-Resolution SLA:
-- Every complaint must be completed within 15 days from `submittedAt`.
-- A complaint is overdue when it is still not `RESOLVED` after 15 days.
-- Admin dashboard and analysis pages highlight overdue complaints so they can be handled immediately.
-
-## 8. Complaint API Reference
-
-| Method | Path | Access | Purpose |
-|--------|------|--------|---------|
-| `POST` | `/api/complaints` | CUSTOMER | Submit complaint with evidence files. |
-| `GET` | `/api/complaints/my` | CUSTOMER | Get current customer's complaints. |
-| `GET` | `/api/complaints` | ADMIN | Get all complaints. |
-| `GET` | `/api/complaints/submitted` | ADMIN | Get `PENDING` complaints for receive step. |
-| `GET` | `/api/complaints/{code}` | CUSTOMER or ADMIN | Get complaint detail. |
-| `GET` | `/api/complaints/statistics/monthly-volume` | ADMIN | Monthly complaint counts. |
-| `PUT` | `/api/complaints/{id}/receive` | ADMIN | Move `PENDING` to `VALIDATING`. |
-| `PUT` | `/api/complaints/{id}/validate` | ADMIN | Validate complaint, set priority, move to `RESOLVING`. |
-| `PUT` | `/api/complaints/{id}/reject-validation` | ADMIN | Reject during validation and complete as `RESOLVED`. |
-| `PUT` | `/api/complaints/{id}/resolution` | ADMIN | Save investigation/root cause/solution while `RESOLVING`. |
-| `PUT` | `/api/complaints/{id}/send-response` | ADMIN | Send response and move to `RESOLVED`. |
-| `PUT` | `/api/complaints/{id}` | CUSTOMER | Edit complaint while status is `PENDING`. |
-
-## 9. Frontend Routes
-
-Customer routes:
-
-| Route | Page |
-|-------|------|
-| `/customer/dashboard` | Customer dashboard. |
-| `/customer/complaints/new` | Submit complaint form. |
-| `/customer/complaints` | Current customer's complaints. |
-| `/customer/complaints/:complaintId` | Complaint detail. |
-| `/customer/notifications` | Notifications. |
-| `/customer/profile` | Profile. |
-
-Admin routes:
-
-| Route | Page |
-|-------|------|
-| `/admin/dashboard` | Admin dashboard. |
-| `/admin/analysis` | Complaint analysis charts. |
-| `/admin/users` | User management. |
-| `/admin/receive` | Receive pending complaints. |
-| `/admin/validate` | Validate complaints. |
-| `/admin/process` | Resolve complaints. |
-| `/admin/response` | Successfully resolved complaint listing. |
-| `/admin/complaints/all` | All complaints. |
-| `/admin/complaints/pending` | Unfinished complaints. |
-| `/admin/complaints/resolved` | Successfully resolved complaints. |
-| `/admin/complaints/rejected` | Validation-rejected complaints. |
-| `/admin/complaints/:complaintId` | Admin complaint detail. |
-
-## 10. Database and Seed Data
-
-The schema is managed by:
-
-```text
-backend/src/main/resources/schema.sql
+```env
+VITE_API_BASE_URL=
 ```
 
-Seed data is managed by:
+An empty value uses the Vite proxy in local development. For a separately hosted backend:
 
-```text
-backend/src/main/resources/data.sql
+```env
+VITE_API_BASE_URL=https://api.example.com
 ```
 
-Default startup does not run SQL init:
+Vite environment variables are read at startup and build time.
 
-```properties
-spring.sql.init.mode=never
+## 6. Database Initialization
+
+### 6.1 Create the database
+
+```bash
+psql -h localhost -U postgres
 ```
 
-The seed profile runs schema and seed scripts:
+```sql
+CREATE DATABASE db;
+\q
+```
+
+### 6.2 Seed profile for a new local environment
+
+`application-seed.properties` enables SQL initialization:
 
 ```properties
 spring.sql.init.mode=always
 ```
 
-Seed data includes:
-- 1 admin account.
-- 100 customer accounts.
-- 100 demo complaints distributed across `PENDING`, `VALIDATING`, `RESOLVING`, and `RESOLVED`.
-- Validation records for validated and rejected demo complaints.
+Run:
 
-All seed accounts use:
+macOS/Linux:
 
-```text
-password123
-```
-
-Admin accounts:
-
-| Email | Role | Name |
-|-------|------|------|
-| `admin@test.com` | ADMIN | Admin User |
-
-Customer accounts (100 total):
-
-| Email | Role | Name |
-|-------|------|------|
-| `customer001@gmail.com` | CUSTOMER | Customer 001 |
-| `customer002@gmail.com` | CUSTOMER | Customer 002 |
-| `customer003@gmail.com` | CUSTOMER | Customer 003 |
-| … | … | … |
-| `customer100@gmail.com` | CUSTOMER | Customer 100 |
-
-Priority in seed:
-- `PENDING` and `VALIDATING` complaints have no priority.
-- `RESOLVING` and successful `RESOLVED` complaints have priority.
-- Rejected complaints are `RESOLVED` with `validation_status = INVALID` and no priority.
-
-## 11. Local Environment Setup
-
-Required tools:
-
-| Tool | Version |
-|------|---------|
-| Java JDK | 17 or higher |
-| Maven | 3.6 or higher |
-| PostgreSQL | 14 or higher |
-| Node.js | 18 or higher |
-
-Default backend database settings:
-
-| Setting | Value |
-|---------|-------|
-| Host | `localhost` |
-| Port | `5432` |
-| Database | `db` |
-| Username | `postgres` |
-| Password | `1` |
-
-Create database:
-
-```sql
-CREATE DATABASE db;
-```
-
-Override database values with environment variables:
-
-```text
-DB_URL
-DB_USERNAME
-DB_PASSWORD
-```
-
-#### OpenAI API key
-
-Create `backend/.env` (git-ignored) with your key:
-
-```env
-OPENAI_API_KEY=your-openai-api-key-here
-```
-
-This key is used by the AI Insights section on the Analysis page.
-The model used is `gpt-5-mini` with `max_completion_tokens = 16000`.
-
-## 12. Running the Project
-
-Backend normal startup:
-
-```powershell
+```bash
 cd backend
-mvn spring-boot:run
+mvn spring-boot:run -Dspring-boot.run.profiles=seed
 ```
 
-Backend with reset seed:
+PowerShell:
 
 ```powershell
 cd backend
 mvn spring-boot:run "-Dspring-boot.run.profiles=seed"
 ```
 
-Use quotes around `-Dspring-boot.run.profiles=seed` in PowerShell.
+The seed profile runs:
 
-Backend URLs:
+1. `schema.sql`, which drops and recreates application tables.
+2. `data.sql`, which inserts demo users, complaints, validations, and feedback.
 
-| URL | Purpose |
-|-----|---------|
-| `http://localhost:8080` | API base. |
-| `http://localhost:8080/swagger-ui.html` | Swagger UI. |
-| `http://localhost:8080/v3/api-docs` | OpenAPI JSON. |
+Stop the seeded backend after startup and restart without the seed profile.
 
-Frontend:
+> The seed profile is destructive. Never use it against a database whose data must be
+> preserved.
 
-```powershell
+### 6.3 Normal startup
+
+The default profile uses:
+
+```properties
+spring.sql.init.mode=never
+spring.jpa.hibernate.ddl-auto=validate
+```
+
+Normal startup preserves data and validates that the database schema matches the entities.
+
+### 6.4 Existing database migration
+
+Databases created before customer feedback need this one-time migration:
+
+```bash
+cd backend
+PGPASSWORD=your-postgres-password \
+psql -h localhost -U postgres -d db -v ON_ERROR_STOP=1 \
+  -f database/add-complaint-feedbacks.sql
+```
+
+The migration:
+
+- Creates `complaint_feedbacks` if missing.
+- Adds feedback ownership and rating constraints.
+- Extends notification types with `CUSTOMER_FEEDBACK`.
+- Preserves existing complaints and users.
+
+## 7. Seed Data
+
+The demo dataset contains:
+
+- 1 administrator.
+- 100 customers.
+- 100 complaints across all workflow stages.
+- Validation records for valid and rejected complaints.
+- Sample feedback for successful resolved complaints.
+- Intentionally overdue complaints for SLA dashboards.
+
+All seeded accounts use:
+
+```text
+password123
+```
+
+| Role | Email |
+|---|---|
+| ADMIN | `admin@test.com` |
+| CUSTOMER | `customer001@gmail.com` through `customer100@gmail.com` |
+
+## 8. Authentication and Authorization
+
+### 8.1 Login flow
+
+1. The user sends credentials to `POST /api/auth/login`.
+2. The backend authenticates with the configured `UserDetailsService`.
+3. The backend returns a signed JWT containing the backend role.
+4. The frontend stores the token in local storage.
+5. Axios sends the token on protected requests.
+6. The route guard decodes the JWT role and expiration before rendering protected pages.
+
+Example header:
+
+```http
+Authorization: Bearer eyJ...
+```
+
+JWT expiration defaults to 24 hours.
+
+### 8.2 Roles
+
+| Role | Permissions |
+|---|---|
+| `CUSTOMER` | Own complaints, own feedback, own notifications |
+| `ADMIN` | All complaints, workflow actions, users, notifications, analysis |
+
+Public registration always creates a `CUSTOMER`.
+Administrator accounts come from seed data or controlled database provisioning.
+
+### 8.3 Public endpoints
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- Swagger/OpenAPI resources
+
+All other application endpoints require authentication.
+Controllers use `@PreAuthorize` for role-specific operations.
+
+## 9. Main Domain Model
+
+### 9.1 Users
+
+| Column | Purpose |
+|---|---|
+| `id` | Primary key |
+| `name` | Display name |
+| `email` | Unique login email |
+| `phone` | Contact number |
+| `password` | BCrypt password hash |
+| `role` | `CUSTOMER` or `ADMIN` |
+| `enabled` | Account status |
+| `created_at`, `updated_at` | Audit timestamps |
+
+### 9.2 Complaints
+
+| Column | Purpose |
+|---|---|
+| `id` | Internal primary key |
+| `complaint_code` | Public code such as `RC-YYYYMMDD-XXXX` |
+| `customer_id` | Complaint owner |
+| `title`, `description` | Customer complaint content |
+| `order_id`, `phone` | Related order and contact data |
+| `category` | `PRODUCT`, `SERVICE`, `DELIVERY`, `BILLING`, `OTHER` |
+| `priority` | `LOW`, `MEDIUM`, `HIGH`, `URGENT` |
+| `status` | Workflow status |
+| `investigation_summary` | Internal handling summary |
+| `root_cause` | Root cause recorded by admin |
+| `resolution` | Customer-facing final response |
+| `validated_by`, `assigned_to`, `approved_by` | Handling administrators |
+| `submitted_at`, `validated_at`, `assigned_at`, `resolved_at` | Workflow timestamps |
+| `edit_count`, `last_edited_at`, `edit_deadline` | Pending-edit tracking |
+
+Priority is assigned by an administrator during validation, not by the customer.
+
+### 9.3 Complaint validations
+
+The validation record stores:
+
+- Checklist results.
+- `VALID` or `INVALID` outcome.
+- Rejection reason.
+- Validation notes and timestamp.
+
+Rejected complaints are represented as:
+
+```text
+complaints.status = RESOLVED
+complaint_validations.validation_status = INVALID
+```
+
+### 9.4 Evidence attachments
+
+Evidence metadata is stored in `complaint_attachments`.
+File bytes are stored under `COMPLAINTS_UPLOAD_DIR`.
+
+Rules:
+
+- At least one evidence file is required during complaint submission.
+- Supported types: JPG, PNG, WEBP, PDF.
+- Maximum file size: 10 MB per file.
+- Maximum multipart request size: 30 MB.
+
+### 9.5 Complaint feedback
+
+`complaint_feedbacks` stores one feedback record per complaint.
+
+| Column | Purpose |
+|---|---|
+| `complaint_id` | Unique complaint reference |
+| `customer_id` | Feedback author |
+| `rating` | Integer from 1 to 5 |
+| `comment` | Optional text, maximum 1000 characters |
+| `created_at`, `updated_at` | Submission timestamps |
+
+Feedback is allowed only when:
+
+- The authenticated customer owns the complaint.
+- The complaint is `RESOLVED`.
+- A non-empty final resolution has been sent.
+- The complaint was not rejected during validation.
+
+Submitting again updates the existing complaint feedback.
+
+### 9.6 Notifications
+
+Notifications are stored per user and can reference a complaint.
+
+Relevant notification events include:
+
+- Complaint received.
+- Validation accepted or rejected.
+- Status changes.
+- Customer feedback received.
+
+Customer notifications link to the customer complaint detail page.
+Feedback notifications link the handling administrator to the admin complaint detail page.
+
+## 10. Complaint Workflow
+
+### 10.1 Successful flow
+
+```text
+PENDING -> VALIDATING -> RESOLVING -> RESOLVED
+```
+
+| Stage | Main action |
+|---|---|
+| `PENDING` | Customer submits; admin receives |
+| `VALIDATING` | Admin checks scope, evidence, and order data |
+| `RESOLVING` | Admin investigates and prepares a resolution |
+| `RESOLVED` | Admin sends the final response |
+
+### 10.2 Rejected flow
+
+```text
+PENDING -> VALIDATING -> RESOLVED
+```
+
+Rejection is a validation result, not a fifth complaint status.
+The customer sees the rejection reason and cannot submit feedback for that complaint.
+
+### 10.3 Customer edit rule
+
+Customers can edit title and description only while the complaint is still `PENDING`
+and any configured edit deadline has not passed.
+
+## 11. Customer Feedback Flow
+
+```text
+Admin sends final response
+        |
+        v
+Customer sees resolution
+        |
+        v
+Customer submits 1-5 stars and optional comment
+        |
+        +--> Feedback stored in PostgreSQL
+        |
+        +--> Handling admin receives CUSTOMER_FEEDBACK notification
+        |
+        +--> Rating appears in admin complaint views and Analysis
+```
+
+The feedback feature is available from the customer complaint detail page.
+Administrators can review the result in:
+
+- Resolved complaint lists.
+- Admin complaint detail.
+- Admin Notifications.
+- Customer Feedback analytics.
+
+## 12. Analysis and SLA
+
+### 12.1 Database statistics
+
+`GET /api/analysis/stats` aggregates:
+
+- Total complaints.
+- Counts by status and category.
+- Monthly trends.
+- SLA breaches and warnings.
+- Average resolution time.
+- Rejection rate.
+- Customer statistics.
+- Total feedback responses.
+- Average rating.
+- Feedback response rate.
+- Low-rating count.
+- 1-5 star distribution.
+
+This endpoint does not call OpenAI.
+
+### 12.2 Optional AI Insights
+
+AI generation happens only through:
+
+```text
+POST /api/analysis/ai
+```
+
+The frontend calls this endpoint only when an administrator clicks **Generate**.
+The request uses the current database statistics to produce:
+
+- Six-month trend summary.
+- Root-cause observations.
+- Next-month prediction.
+- Immediate actions.
+- Short-term actions.
+- Weekly actions.
+
+Without a valid `OPENAI_API_KEY`, the rest of the application still runs and database
+statistics remain available.
+
+### 12.3 SLA business rule
+
+The current project policy is:
+
+```text
+SLA_DAYS = 15
+WARNING_WINDOW = final 3 days
+```
+
+- Open for more than 15 days: SLA breach.
+- Open from day 12 through day 15: SLA warning.
+
+Operational health is calculated from database data, not from OpenAI:
+
+| Health | Rule |
+|---|---|
+| `HEALTHY` | No SLA breaches and average resolution time below 10 days |
+| `WARNING` | At least one breach, or average resolution time from 10 to 15 days |
+| `CRITICAL` | More than five breaches, or average resolution time above 15 days |
+
+The 15-day value is an application business rule and not an external legal requirement.
+It is currently declared in backend analysis logic and frontend complaint display logic.
+
+## 13. API Reference
+
+All API responses use the application response envelope:
+
+```json
+{
+  "success": true,
+  "message": "Operation completed",
+  "data": {}
+}
+```
+
+### 13.1 Authentication
+
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | Public | Register customer and return JWT |
+| `POST` | `/api/auth/login` | Public | Authenticate and return JWT |
+| `GET` | `/api/auth/me` | Authenticated | Current user profile |
+| `GET` | `/api/auth/check-role` | Authenticated | Role information |
+| `GET` | `/api/auth/customer-only` | CUSTOMER | Role test |
+| `GET` | `/api/auth/admin-only` | ADMIN | Role test |
+
+### 13.2 Complaints
+
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| `POST` | `/api/complaints` | CUSTOMER | Submit multipart complaint |
+| `GET` | `/api/complaints/my` | CUSTOMER | Customer's complaints |
+| `GET` | `/api/complaints` | ADMIN | All complaints |
+| `GET` | `/api/complaints/submitted` | ADMIN | Pending receive queue |
+| `GET` | `/api/complaints/{code}` | CUSTOMER or ADMIN | Complaint detail |
+| `GET` | `/api/complaints/statistics/monthly-volume` | ADMIN | Monthly volume |
+| `PUT` | `/api/complaints/{id}` | CUSTOMER | Edit pending complaint |
+| `PUT` | `/api/complaints/{id}/receive` | ADMIN | Move to validation |
+| `PUT` | `/api/complaints/{id}/validate` | ADMIN | Validate and prioritize |
+| `PUT` | `/api/complaints/{id}/reject-validation` | ADMIN | Reject and complete |
+| `PUT` | `/api/complaints/{id}/resolution` | ADMIN | Save handling result |
+| `PUT` | `/api/complaints/{id}/send-response` | ADMIN | Send final response |
+| `PUT` | `/api/complaints/{code}/feedback` | CUSTOMER | Create or update feedback |
+
+Feedback request:
+
+```json
+{
+  "rating": 5,
+  "comment": "The resolution was clear and helpful."
+}
+```
+
+### 13.3 Attachments
+
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| `GET` | `/api/attachments/{id}/content` | Authorized user | View evidence content |
+
+### 13.4 Notifications
+
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| `GET` | `/api/notifications/my` | Authenticated | Current user's notifications |
+| `PUT` | `/api/notifications/{id}/read` | Notification owner | Mark one as read |
+| `PUT` | `/api/notifications/read-all` | Authenticated | Mark all as read |
+
+### 13.5 Analysis and users
+
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| `GET` | `/api/analysis/stats` | ADMIN | Database statistics |
+| `POST` | `/api/analysis/ai` | ADMIN | Generate AI insights |
+| `GET` | `/api/admin/users` | ADMIN | List users |
+
+Interactive schemas are available at:
+
+```text
+http://localhost:8080/swagger-ui.html
+```
+
+## 14. Frontend Routes
+
+### 14.1 Customer routes
+
+| Route | Page |
+|---|---|
+| `/customer/dashboard` | Complaint dashboard |
+| `/customer/complaints/new` | Submit complaint |
+| `/customer/complaints` | Customer complaint list |
+| `/customer/complaints/:complaintId` | Complaint detail, resolution, feedback |
+| `/customer/notifications` | Customer notifications |
+| `/customer/profile` | Account information and local preferences |
+
+### 14.2 Administrator routes
+
+| Route | Page |
+|---|---|
+| `/admin/dashboard` | Complaint dashboard |
+| `/admin/receive` | Receive `PENDING` complaints |
+| `/admin/validate` | Validate `VALIDATING` complaints |
+| `/admin/process` | Process `RESOLVING` complaints |
+| `/admin/response` | Successfully resolved complaints |
+| `/admin/complaints/all` | All complaints |
+| `/admin/complaints/pending` | Unfinished complaints |
+| `/admin/complaints/resolved` | Successfully resolved complaints |
+| `/admin/complaints/rejected` | Validation-rejected complaints |
+| `/admin/complaints/:complaintId` | Admin complaint detail |
+| `/admin/users` | User management |
+| `/admin/notifications` | Admin notifications and customer feedback alerts |
+| `/admin/analysis` | Operational and feedback analytics |
+
+## 15. Running the Application
+
+### Backend
+
+```bash
+cd backend
+mvn spring-boot:run
+```
+
+### Frontend
+
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Frontend URL:
+### Local URLs
 
-```text
-http://localhost:5173
-```
+| URL | Purpose |
+|---|---|
+| `http://localhost:5173` | Frontend |
+| `http://localhost:8080` | Backend |
+| `http://localhost:8080/swagger-ui.html` | Swagger UI |
+| `http://localhost:8080/v3/api-docs` | OpenAPI JSON |
 
-## 13. Build and Verification
+## 16. Testing and Build Verification
 
 Backend tests:
 
-```powershell
+```bash
 cd backend
 mvn test
 ```
 
-Frontend build:
+Backend package:
 
-```powershell
+```bash
+mvn clean package
+```
+
+Frontend production build:
+
+```bash
 cd frontend
+npm install
 npm run build
 ```
 
-## 14. Key Implementation Notes
+Frontend preview:
 
-Security:
-- JWT is signed with HMAC-SHA256.
-- JWT expiration defaults to 24 hours.
-- Passwords use BCrypt.
-- Public routes are limited to login/register and API documentation.
+```bash
+npm run preview
+```
 
-Backend initialization:
-- `schema.sql` recreates tables when SQL init runs.
-- `data.sql` truncates and seeds local demo data.
-- Use seed profile only when intentionally resetting local data.
+## 17. New Developer Verification Checklist
 
-Frontend API:
-- `frontend/src/services/apiClient.js` is the central Axios client.
-- Auth APIs are in `frontend/src/services/authService.js`.
-- Complaint APIs and status mapping are in `frontend/src/services/complaintService.js`.
+After setup, verify these flows:
 
-Status handling:
-- Use `rawStatus` when admin logic depends on backend workflow state.
-- Use `status` for display labels.
-- Use `validationStatus === "INVALID"` or `isRejected` when filtering rejected complaints.
+1. Sign in as `customer001@gmail.com`.
+2. Submit a complaint with at least one evidence file.
+3. Sign in as `admin@test.com`.
+4. Receive the complaint.
+5. Validate it and assign priority.
+6. Record root cause and resolution.
+7. Send the final response.
+8. Sign in again as the customer.
+9. Open the resolved complaint and submit a rating.
+10. Sign in as admin and confirm the feedback notification.
+11. Open Analysis and confirm Customer Feedback metrics.
+12. Click **Generate** only when testing AI Insights.
 
-Priority:
-- Do not send priority from customer complaint submit forms.
-- Only validation requests should include priority.
+## 18. Operational Notes
 
-## 15. Rebuild Checklist for a New Developer
-
-1. Install Java, Maven, PostgreSQL, and Node.js.
-2. Create PostgreSQL database `db`.
-3. Confirm backend DB credentials in `application.properties`.
-4. Create `backend/.env` and add your OpenAI API key:
-
-   ```env
-   OPENAI_API_KEY=your-openai-api-key-here
-   ```
-
-5. Run backend seed profile to load demo data:
-
-   ```powershell
-   cd backend
-   mvn spring-boot:run "-Dspring-boot.run.profiles=seed"
-   ```
-
-6. Stop backend after seed startup completes.
-7. Start backend normally:
-
-   ```powershell
-   mvn spring-boot:run
-   ```
-
-8. Start frontend:
-
-   ```powershell
-   cd ../frontend
-   npm install
-   npm run dev
-   ```
-
-9. Open `http://localhost:5173` and login with one of the demo accounts:
-
-   | Account | Email | Password |
-   |---------|-------|----------|
-   | Admin | `admin@test.com` | `password123` |
-   | Customer | `customer001@gmail.com` | `password123` |
-   | Customer | `customer002@gmail.com` | `password123` |
-
-10. Validate the app:
-    - Customer can submit a complaint.
-    - Admin can receive, validate, resolve, and complete complaints.
-    - Admin can view rejected complaints as validation-invalid resolved records.
-    - Admin can view user management and analysis pages (AI Insights requires a valid OpenAI API key).
+- `schema.sql` is destructive when SQL initialization is enabled.
+- Normal startup preserves data because `spring.sql.init.mode=never`.
+- Hibernate uses `ddl-auto=validate`; schema mismatches prevent startup.
+- Evidence files are stored on the local filesystem, not in PostgreSQL.
+- The default database password and JWT secret are for local convenience only.
+- Production deployments must provide secure environment variables.
+- Production frontend deployments must set `VITE_API_BASE_URL` when no reverse proxy is used.
+- Production CORS origins must be provided through `CORS_ALLOWED_ORIGINS`.
+- AI Insights are optional and should not block complaint operations.

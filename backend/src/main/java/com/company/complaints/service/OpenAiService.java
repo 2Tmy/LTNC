@@ -43,6 +43,11 @@ public class OpenAiService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public String call(String prompt) {
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new IllegalStateException(
+                    "OpenAI API key is not configured. Set OPENAI_API_KEY to generate AI analysis.");
+        }
+
         try {
             String requestJson = objectMapper.writeValueAsString(Map.of(
                     "model", model,

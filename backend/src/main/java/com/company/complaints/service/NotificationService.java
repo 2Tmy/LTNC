@@ -37,6 +37,28 @@ public class NotificationService {
                 .build(), "Notification is required"));
     }
 
+    @Transactional
+    public void notifyHandlingAdmin(Complaint complaint, NotificationType type,
+                                    String title, String message) {
+        User admin = complaint.getApprovedBy() != null
+                ? complaint.getApprovedBy()
+                : complaint.getAssignedTo() != null
+                    ? complaint.getAssignedTo()
+                    : complaint.getValidatedBy();
+        if (admin == null) {
+            return;
+        }
+
+        notificationRepository.save(Objects.requireNonNull(Notification.builder()
+                .user(admin)
+                .complaint(complaint)
+                .type(type)
+                .title(title)
+                .message(message)
+                .actionUrl("/admin/complaints/" + complaint.getComplaintCode())
+                .build(), "Notification is required"));
+    }
+
     @Transactional(readOnly = true)
     public List<NotificationResponse> getMyNotifications(Authentication authentication) {
         User user = getCurrentUser(authentication);

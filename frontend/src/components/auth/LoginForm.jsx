@@ -8,14 +8,14 @@ const inputBase =
 
 export default function LoginForm() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", password: "", remember: true });
+  const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const updateField = (e) => {
-    const { name, type, checked, value } = e.target;
-    setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
     setErrors((err) => ({ ...err, [name]: "" }));
   };
 
@@ -51,7 +51,7 @@ export default function LoginForm() {
     } catch (err) {
       const message = err.response
         ? err.response.data?.message || "Sign in failed. Please try again."
-        : "Cannot connect to the backend at http://localhost:8080. Start the backend and try again.";
+        : "Cannot connect to the server. Start the backend and try again.";
       setErrors({ form: message });
     } finally {
       setLoading(false);
@@ -106,7 +106,7 @@ export default function LoginForm() {
             type="button"
             onClick={() => setShowPassword((v) => !v)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
-            tabIndex={-1}
+            aria-label={showPassword ? "Hide password" : "Show password"}
           >
             <span className="material-symbols-outlined text-[18px]">
               {showPassword ? "visibility_off" : "visibility"}
@@ -114,23 +114,6 @@ export default function LoginForm() {
           </button>
         </div>
         {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
-      </div>
-
-      {/* Remember + Forgot */}
-      <div className="flex items-center justify-between">
-        <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-500">
-          <input
-            type="checkbox"
-            name="remember"
-            checked={form.remember}
-            onChange={updateField}
-            className="h-4 w-4 rounded border-slate-300 accent-blue-600"
-          />
-          Remember me
-        </label>
-        <a href="#forgot-password" className="text-xs font-semibold text-blue-600 hover:underline">
-          Forgot password?
-        </a>
       </div>
 
       {/* Form error */}

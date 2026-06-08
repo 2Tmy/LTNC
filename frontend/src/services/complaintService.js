@@ -34,39 +34,6 @@ const priorityMap = {
 
 export const COMPLAINT_SLA_DAYS = 15;
 
-const EXTRA_STORAGE_KEY = "complaintExtras";
-
-const readExtras = () => {
-  try {
-    return JSON.parse(localStorage.getItem(EXTRA_STORAGE_KEY) || "{}");
-  } catch {
-    return {};
-  }
-};
-
-const saveExtras = (complaintId, extras) => {
-  if (!complaintId) return;
-
-  const allExtras = readExtras();
-  allExtras[String(complaintId)] = extras;
-  localStorage.setItem(EXTRA_STORAGE_KEY, JSON.stringify(allExtras));
-};
-
-const getDefaultExtras = () => ({
-  orderId: "",
-  phone: "",
-  evidenceFiles: [],
-  resolution: "",
-});
-
-const getExtras = (complaintId) => {
-  const stored = readExtras()[String(complaintId)] || {};
-  return {
-    ...getDefaultExtras(),
-    ...stored,
-  };
-};
-
 const formatDate = (value) => {
   if (!value) return "Not available";
 
@@ -110,7 +77,6 @@ const getInitials = (name) => {
 };
 
 export const toComplaintUiModel = (c) => {
-  const extras = getExtras(c.id);
   const displayCode = c.complaintCode || `CMP-${String(c.id || "").padStart(4, "0")}`;
   const status = statusMap[c.status] || c.status || "Pending";
   const submittedAtRaw = c.submittedAt || c.createdAt;
@@ -151,13 +117,19 @@ export const toComplaintUiModel = (c) => {
     isOverdue,
     isDueSoon,
 
-    orderId: c.orderId || extras.orderId,
-    phone: c.phone || extras.phone,
+    orderId: c.orderId || "",
+    phone: c.phone || "",
     description: c.description || "",
-    resolution: c.resolution || extras.resolution,
+    resolution: c.resolution || "",
     investigationSummary: c.investigationSummary || "",
     rootCause: c.rootCause || "",
     rejectionReason: c.rejectionReason || "",
+    feedback: c.feedback
+      ? {
+          ...c.feedback,
+          submittedAt: formatDate(c.feedback.updatedAt || c.feedback.createdAt),
+        }
+      : null,
 
     customerId: c.customerId,
     customer: c.customerName || "Customer",
@@ -191,9 +163,9 @@ export const toComplaintUiModel = (c) => {
           type: attachment.fileType,
           size: attachment.fileSize,
         }))
-      : (c.evidenceFiles || extras.evidenceFiles || []).map((name) => ({
+      : (c.evidenceFiles || []).map((name) => ({
           name,
-          type: c.evidenceFiles ? "Uploaded file" : "Mock/local file",
+          type: "Uploaded file",
         })),
   };
 };
@@ -208,16 +180,7 @@ export const createComplaint = async (payload) => {
   const response = await apiClient.post("/api/complaints", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  const created = response.data.data;
-
-  saveExtras(created.id, {
-    orderId: payload.orderId?.trim() || "",
-    phone: payload.phone?.trim() || "",
-    evidenceFiles: [],
-    resolution: "",
-  });
-
-  return toComplaintUiModel(created);
+  return toComplaintUiModel(response.data.data);
 };
 
 export const getMyComplaints = async () => {
@@ -289,22 +252,9 @@ export const getMonthlyComplaintVolume = async () => {
   return response.data.data;
 };
 
-const FEEDBACK_KEY = "complaint_feedbacks";
-
 export const submitFeedback = async (complaintCode, payload) => {
-  const all = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || "{}");
-  all[complaintCode] = { ...payload, submittedAt: new Date().toISOString() };
-  localStorage.setItem(FEEDBACK_KEY, JSON.stringify(all));
-  return { success: true };
-};
-
-export const getFeedback = async (complaintCode) => {
-  const all = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || "{}");
-  return all[complaintCode] || null;
-};
-
-export const getAllFeedbacks = () => {
-  return JSON.parse(localStorage.getItem(FEEDBACK_KEY) || "{}");
+  const response = await apiClient.put(`/api/complaints/${complaintCode}/feedback`, payload);
+  return response.data.data;
 };
 
 export const getComplaints = getAllComplaints;

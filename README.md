@@ -1,485 +1,446 @@
-# Customer Complaint Management System
+# VISHIPEL Customer Complaint Management System
 
 ![Java 17](https://img.shields.io/badge/Java-17-blue.svg)
-![Spring Boot 3.4](https://img.shields.io/badge/Spring_Boot-3.4.5-brightgreen.svg)
+![Spring Boot 3.4.5](https://img.shields.io/badge/Spring_Boot-3.4.5-brightgreen.svg)
 ![React 19](https://img.shields.io/badge/React-19-61dafb.svg)
 ![Vite 6](https://img.shields.io/badge/Vite-6-646CFF.svg)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-336791.svg)
+![PostgreSQL 14+](https://img.shields.io/badge/PostgreSQL-14%2B-336791.svg)
 
-A full-stack web application for managing customer complaints.
-Built with **React 19 + Vite + Tailwind CSS** (frontend) and **Spring Boot 3.4 + PostgreSQL** (backend).
+A full-stack complaint management application for customers and support administrators.
 
----
+Customers can submit and track complaints, receive the final resolution, and rate the
+handling result. Administrators can manage the complete complaint workflow, receive
+customer feedback notifications, monitor SLA metrics, and generate AI insights on demand.
 
-## Project Structure
+## Features
 
-```
-LTNC/
-├── backend/          # Spring Boot REST API
-├── frontend/         # React + Vite SPA
-└── README.md
-```
+### Customer
 
----
+- Register and sign in with JWT authentication.
+- Submit complaints with order details and evidence files.
+- Track the workflow from submission to final response.
+- View validation rejection reasons or the administrator's resolution.
+- Submit or update a 1-5 star rating with an optional comment.
+- Receive and manage complaint notifications.
 
-## Backend — What Has Been Built
+### Administrator
 
-### Authentication Module (completed)
+- Receive, validate, reject, process, and resolve complaints.
+- Assign priority during validation.
+- Record investigation details, root cause, and customer-facing resolution.
+- View all, pending, resolved, and rejected complaints.
+- Review customer ratings in complaint lists and detail pages.
+- Receive notifications when customers submit feedback.
+- View complaint, SLA, customer, and feedback analytics.
+- Generate AI insights only when requested.
 
-| Feature | Details |
-|---------|---------|
-| User registration | `POST /api/auth/register` — creates a CUSTOMER account, returns JWT |
-| User login | `POST /api/auth/login` — validates credentials, returns JWT |
-| Current user profile | `GET /api/auth/me` — returns profile of the logged-in user |
-| Role check | `GET /api/auth/check-role` — returns full role info with boolean flags |
-| Role-gated endpoints | `GET /api/auth/customer-only`, `/admin-only` |
-
-### Security
-
-- **JWT authentication** — stateless, signed with HMAC-SHA256, expires in 24 hours
-- **BCrypt password hashing** — cost factor 10
-- **Spring Security 6** — method-level `@PreAuthorize` enforced
-- **CORS** — allowed origins: `localhost:5173` (Vite) and `localhost:3000`
-- **Public endpoints** — `/api/auth/register` and `/api/auth/login` only; all others require a valid Bearer token
-
-### Role System
-
-| Role | Description |
-|------|-------------|
-| `CUSTOMER` | External user who submits complaints |
-| `ADMIN` | Receives, validates, processes, and responds to complaints |
-
-New registrations via the public endpoint always receive the `CUSTOMER` role.
-Admin accounts must be created directly in the database.
-
-### Tech Stack
+## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Framework | Spring Boot 3.4.5 |
-| Language | Java 17+ |
-| Security | Spring Security 6 + JJWT 0.12.3 |
-| Database | PostgreSQL 18 |
-| ORM | Hibernate 6 / Spring Data JPA |
-| Validation | Jakarta Bean Validation |
-| API Docs | SpringDoc OpenAPI 2.8.3 (Swagger UI) |
-| Build | Maven 3.9 |
-| Utilities | Lombok |
+|---|---|
+| Frontend | React 19, Vite 6, Tailwind CSS, Recharts, Axios |
+| Backend | Java 17, Spring Boot 3.4.5, Spring Security 6 |
+| Authentication | JWT, BCrypt |
+| Database | PostgreSQL 14+ |
+| Persistence | Spring Data JPA, Hibernate |
+| API documentation | SpringDoc OpenAPI / Swagger UI |
+| Build tools | Maven 3.6+, npm |
 
----
+## Repository Structure
+
+```text
+LTNC/
+|-- backend/
+|   |-- database/                         One-time non-destructive migrations
+|   |-- src/main/java/com/company/complaints/
+|   |-- src/main/resources/
+|   |   |-- application.properties
+|   |   |-- application-seed.properties
+|   |   |-- schema.sql
+|   |   `-- data.sql
+|   `-- src/test/
+|-- frontend/
+|   |-- src/
+|   `-- .env.example
+|-- PROJECT_DOCUMENTATION.md
+`-- README.md
+```
 
 ## Prerequisites
 
-| Tool | Version | Notes |
-|------|---------|-------|
-| Java (JDK) | 17 or higher | Tested with Eclipse Temurin 25 |
-| Maven | 3.6 or higher | |
-| PostgreSQL | 14 or higher | Tested with PostgreSQL 18 |
-| Node.js | 18 or higher | For the frontend only |
+Install these tools before starting:
 
----
+| Tool | Required version |
+|---|---|
+| Java JDK | 17 or newer |
+| Maven | 3.6 or newer |
+| PostgreSQL | 14 or newer |
+| Node.js | 18 or newer |
+| npm | Included with Node.js |
 
-## PostgreSQL Setup
-
-### 1. Install PostgreSQL
-
-Download from https://www.postgresql.org/download/windows/ and install with default settings.
-Default superuser: `postgres`, set a password during install.
-
-### 2. Create the database
-
-Open a terminal and run:
+Verify the installation:
 
 ```bash
-psql -U postgres
+java -version
+mvn -version
+psql --version
+node --version
+npm --version
 ```
 
-Then inside psql:
+## Quick Start
+
+### 1. Clone the repository
+
+```bash
+git clone <repository-url>
+cd LTNC
+```
+
+### 2. Create the PostgreSQL database
+
+Start PostgreSQL, then run:
+
+```bash
+psql -h localhost -U postgres
+```
+
+Inside `psql`:
 
 ```sql
 CREATE DATABASE db;
 \q
 ```
 
-### 3. Verify connection
+The default local connection is:
 
-```bash
-psql -U postgres -d db -c "SELECT version();"
-```
-
-The backend connects with these credentials (configured in `application.properties`):
-
-| Setting | Value |
-|---------|-------|
+| Setting | Default |
+|---|---|
 | Host | `localhost` |
 | Port | `5432` |
 | Database | `db` |
 | Username | `postgres` |
 | Password | `1` |
 
-To use different credentials, edit [backend/src/main/resources/application.properties](backend/src/main/resources/application.properties):
+Use environment variables if your PostgreSQL credentials are different.
 
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/db
-spring.datasource.username=postgres
-spring.datasource.password=1
+### 3. Configure the backend
+
+Create `backend/.env`:
+
+```env
+DB_URL=jdbc:postgresql://localhost:5432/db
+DB_USERNAME=postgres
+DB_PASSWORD=your-postgres-password
+
+JWT_SECRET=replace-this-with-a-long-random-secret-at-least-32-characters
+JWT_EXPIRATION=86400000
+
+# Optional. Only required for real AI-generated insights.
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-5-mini
+OPENAI_MAX_TOKENS=2500
+
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+COMPLAINTS_UPLOAD_DIR=uploads
 ```
 
----
+`backend/.env` is ignored by Git. Do not commit real database passwords, JWT secrets,
+or API keys.
 
-## Database Structure
+The application can run without `OPENAI_API_KEY`. Database statistics and customer
+feedback analytics still work. A valid key is only needed when an administrator clicks
+**Generate** in AI Insights and expects a real model response.
 
-### Table: `users`
+### 4. Initialize demo data
 
-`schema.sql` creates this table on startup and Hibernate verifies it (`ddl-auto=validate`).
+The recommended first-time setup is the seed profile. It creates the complete schema,
+one administrator, 100 customers, demo complaints, validations, and sample feedback.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `BIGINT` | PK, auto-increment | Unique user ID |
-| `name` | `VARCHAR` | NOT NULL | Full name |
-| `email` | `VARCHAR` | NOT NULL, UNIQUE | Login email |
-| `phone` | `VARCHAR` | | Contact phone |
-| `password` | `VARCHAR` | NOT NULL | BCrypt hash |
-| `role` | `VARCHAR` | NOT NULL | `CUSTOMER`, `ADMIN` |
-| `enabled` | `BOOLEAN` | NOT NULL, default `true` | Account active flag |
-| `created_at` | `TIMESTAMP` | NOT NULL | Set automatically on insert |
+> Warning: the seed profile drops and recreates application tables. Use it only for
+> local development or when you intentionally want to reset the demo database.
 
-### Test Data
+macOS/Linux:
 
-Run the `seed` profile when you explicitly want to reset the local database and load [backend/src/main/resources/data.sql](backend/src/main/resources/data.sql).
-Normal startup preserves existing data because `spring.sql.init.mode=never` in the default profile.
-**All test accounts use the password `password123`.**
+```bash
+cd backend
+mvn spring-boot:run -Dspring-boot.run.profiles=seed
+```
 
-#### Admin accounts
-
-| Email | Role | Name |
-|-------|------|------|
-| `admin@test.com` | ADMIN | Admin User |
-
-#### Customer accounts
-
-100 customer accounts are seeded, following the pattern below:
-
-| Email pattern | Role | Name pattern |
-|---------------|------|--------------|
-| `customer001@gmail.com` | CUSTOMER | Customer 001 |
-| `customer002@gmail.com` | CUSTOMER | Customer 002 |
-| … | … | … |
-| `customer100@gmail.com` | CUSTOMER | Customer 100 |
-
-#### Sample complaints
-
-100 demo complaints are distributed across the four statuses:
-`PENDING`, `VALIDATING`, `RESOLVING`, `RESOLVED`.
-
-Rejected complaints are stored as `RESOLVED` with `validation_status = 'INVALID'` and a rejection reason.
-
-To run the seed from PowerShell:
+PowerShell:
 
 ```powershell
 cd backend
 mvn spring-boot:run "-Dspring-boot.run.profiles=seed"
 ```
 
-Stop the backend after the seed profile finishes startup, then run the backend normally to preserve data:
+Wait until Spring reports that the application has started, then stop it with `Ctrl+C`.
+The database is now initialized.
 
-```powershell
-mvn spring-boot:run
-```
+### 5. Start the backend normally
 
-Use quotes around `-Dspring-boot.run.profiles=seed` in PowerShell. Without quotes, Maven can misread the argument and fail with `LifecyclePhaseNotFoundException`.
+From `backend/`:
 
-To verify in psql:
-
-```sql
-SELECT id, name, email, role FROM users ORDER BY role, id;
-SELECT status, COUNT(*) FROM complaints GROUP BY status ORDER BY status;
-```
-
----
-
-### Table: `complaints`
-
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `BIGINT` | PK, auto-increment | Unique complaint ID |
-| `complaint_code` | `VARCHAR` | NOT NULL, UNIQUE | Auto-generated ID (e.g., RC-YYYYMMDD-XXXX) |
-| `customer_id` | `BIGINT` | FK to users | Submitting customer |
-| `title` | `VARCHAR` | NOT NULL | Brief summary |
-| `category` | `VARCHAR` | | Complaint category |
-| `priority` | `VARCHAR` | | Low, Medium, High |
-| `status` | `VARCHAR` | NOT NULL | Complaint lifecycle status: `PENDING`, `VALIDATING`, `RESOLVING`, or `RESOLVED` |
-| `order_id` | `VARCHAR` | | Related order reference |
-| `phone` | `VARCHAR` | | Complaint contact phone |
-| `description` | `TEXT` | | Detailed explanation |
-| `resolution` | `TEXT` | | Final response/resolution |
-| `created_at` | `TIMESTAMP` | NOT NULL | Set automatically |
-| `updated_at` | `TIMESTAMP` | NOT NULL | Set automatically |
-
----
-
-## Running the Project
-
-### Backend
-
-#### 1. Configure environment variables
-
-Create a file `backend/.env` with your OpenAI API key (this file is git-ignored):
-
-```env
-OPENAI_API_KEY=your-openai-api-key-here
-```
-
-#### 2. Run the backend
-
-Open a terminal and run:
-
-```powershell
-cd backend
+```bash
 mvn spring-boot:run
 ```
 
 Wait for:
-```
+
+```text
 Tomcat started on port 8080
 ```
 
-To reset the local database and restore demo accounts, stop the backend and run:
+Backend URLs:
 
-```powershell
-mvn spring-boot:run "-Dspring-boot.run.profiles=seed"
-```
+| URL | Purpose |
+|---|---|
+| `http://localhost:8080` | REST API |
+| `http://localhost:8080/swagger-ui.html` | Swagger UI |
+| `http://localhost:8080/v3/api-docs` | OpenAPI JSON |
 
-Stop that process after startup, then return to normal `mvn spring-boot:run`.
+### 6. Start the frontend
 
-The API is now available at `http://localhost:8080`.
-Swagger UI is available at `http://localhost:8080/swagger-ui.html`.
+Open a second terminal at the repository root:
 
-### Frontend
-
-Open a second terminal:
-
-```powershell
+```bash
 cd frontend
-npm install      # first time only
+npm install
 npm run dev
 ```
 
-Wait for:
+Open:
+
+```text
+http://localhost:5173
 ```
-Local: http://localhost:5173/
+
+During development, Vite proxies `/api` requests to `http://localhost:8080`.
+No frontend environment file is required for the default local setup.
+
+### 7. Sign in with demo accounts
+
+All seeded accounts use:
+
+```text
+password123
 ```
 
-Open `http://localhost:5173` in your browser.
+| Role | Email |
+|---|---|
+| Administrator | `admin@test.com` |
+| Customer | `customer001@gmail.com` |
+| Customer | `customer002@gmail.com` |
 
-### Stopping the servers
+Customer accounts continue through `customer100@gmail.com`.
 
-Close the terminal windows. If port 8080 remains occupied on next startup:
+## Existing Database Migration
+
+If the database was created before customer feedback was introduced, apply this
+non-destructive migration once:
+
+macOS/Linux:
+
+```bash
+cd backend
+PGPASSWORD=your-postgres-password \
+psql -h localhost -U postgres -d db -v ON_ERROR_STOP=1 \
+  -f database/add-complaint-feedbacks.sql
+```
+
+PowerShell:
 
 ```powershell
-$p = (Get-NetTCPConnection -LocalPort 8080).OwningProcess
-Stop-Process -Id $p -Force
+cd backend
+$env:PGPASSWORD = "your-postgres-password"
+psql -h localhost -U postgres -d db -v ON_ERROR_STOP=1 -f database/add-complaint-feedbacks.sql
+Remove-Item Env:PGPASSWORD
 ```
 
----
+Do not run the seed profile against a database whose data must be preserved.
 
-## Complaint Module — Implementation (Current Progress)
+## Frontend Environment Configuration
 
-This section describes the complaint management features that have been implemented on top of the existing authentication and security system.
+The default value in `frontend/.env.example` is:
 
-The module focuses on enabling customers to submit complaints and allowing one admin role to receive and process them.
+```env
+VITE_API_BASE_URL=
+```
 
----
+An empty value uses the Vite development proxy. If the frontend is hosted separately,
+create `frontend/.env` and set the backend origin:
 
-### Backend — Complaint APIs
+```env
+VITE_API_BASE_URL=http://localhost:8080
+```
 
-The following REST endpoints have been implemented:
+Restart Vite after changing frontend environment variables.
 
-| Method | Path | Auth required | Role | Description |
-|--------|------|--------------|------|------------|
-| `POST` | `/api/complaints` | Yes | CUSTOMER | Submit a new complaint |
-| `GET` | `/api/complaints/my` | Yes | CUSTOMER | Retrieve current user's complaints |
-| `GET` | `/api/complaints/{complaintCode}` | Yes | ALL ROLES | Get complaint detail |
-| `GET` | `/api/complaints` | Yes | ADMIN | Retrieve all complaints |
-| `GET` | `/api/complaints/submitted` | Yes | ADMIN | Retrieve submitted (pending) complaints |
-| `PUT` | `/api/complaints/{id}/receive` | Yes | ADMIN | Mark complaint as received |
+## Complaint Workflow
 
----
+Successful complaint flow:
 
-### Complaint Processing Flow
-
-The complaint lifecycle is currently defined as:
 ```text
 PENDING -> VALIDATING -> RESOLVING -> RESOLVED
 ```
 
-The four complaint statuses are:
+Rejected complaint flow:
 
-| Status | Meaning |
-|----------------|------------------|
-| `PENDING` | Customer submitted the complaint; admin has not received it yet |
-| `VALIDATING` | Admin received the complaint and checks whether it is valid |
-| `RESOLVING` | Validated complaint is being handled, investigated, and given a solution |
-| `RESOLVED` | Complaint is completed |
-
-Rejected complaints are not a separate complaint status. They are completed as `RESOLVED` with `validation_status = 'INVALID'` in `complaint_validations`.
-
-Complaints must be resolved within 15 days from the customer submission date. Admin dashboard and analysis pages highlight overdue complaints that are still not `RESOLVED`.
-
----
-
-### Backend Implementation Notes
-
-- Complaint codes are generated automatically using the format: RC-YYYYMMDD-XXXX
-- Role-based access control is enforced using `@PreAuthorize`.
-
-- Authorization logic includes:
-- Customers can only access their own complaints
-- Admin can access all complaints
-
-- The service layer handles:
-- Complaint creation
-- Ownership validation
-- Status transitions (e.g. receive complaint)
-
----
-
-### Frontend — Complaint Integration
-
-The frontend has been integrated with the backend APIs for real-time data handling.
-
-#### Customer Features
-
-- Submit complaint form  
-`/customer/complaints/new`
-
-- Redirect to complaint detail after submission  
-- View complaint detail page with:
-  - Complaint information
-  - Status timeline
-  - Resolution content
-
----
-
-#### Admin Features
-
-- View pending complaints  
-`/admin/receive`
-
-- Receive complaint (status update from `PENDING` to `VALIDATING`)
-- Validate complaint (status update from `VALIDATING` to `RESOLVING`, or reject as `RESOLVED`)
-- Resolve complaint (save investigation, root cause, and solution while `RESOLVING`)
-- Send response (status update from `RESOLVING` to `RESOLVED`)
-
-- View complaint detail (separate admin view)
-
-### Current Implementation Status
-
-#### Completed
-
-- Customer complaint submission flow
-- Complaint detail page (customer and admin)
-- Admin complaint receiving flow
-- Backend API integration with frontend
-- Role-based access validation
-
----
-
-#### In Progress
-
-- Complaint status tracking dashboard
-- Aggregated metrics (total / pending / resolved complaints)
-
----
-
-### Notes
-
-- Database schema is fully extracted to `schema.sql` for production readiness.
-- Hibernate's auto-generation should be disabled (`spring.jpa.hibernate.ddl-auto=validate` or `none`).
-
----
-
-## API Reference
-
-Full interactive documentation is available at `http://localhost:8080/swagger-ui.html` after starting the server.
-
-### Auth Endpoints
-
-| Method | Path | Auth required | Description |
-|--------|------|---------------|-------------|
-| `POST` | `/api/auth/register` | No | Create a new customer account |
-| `POST` | `/api/auth/login` | No | Login and receive a JWT |
-| `GET` | `/api/auth/me` | Yes | Get current user profile |
-| `GET` | `/api/auth/check-role` | Yes | Get role info with boolean flags |
-| `GET` | `/api/auth/customer-only` | Yes — CUSTOMER | Role access test |
-| `GET` | `/api/auth/admin-only` | Yes — ADMIN | Role access test |
-
-### Request / Response Format
-
-**Login request:**
-```json
-{
-  "email": "customer01@test.com",
-  "password": "password123"
-}
+```text
+PENDING -> VALIDATING -> RESOLVED
 ```
 
-**Login response:**
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "token": "eyJ...",
-    "userId": 1,
-    "name": "Nguyen Van An",
-    "email": "customer01@test.com",
-    "role": "CUSTOMER"
-  }
-}
+Rejected complaints remain `RESOLVED` at the complaint level and are identified by
+`complaint_validations.validation_status = 'INVALID'`.
+
+After a successful final response:
+
+1. The customer sees the administrator's resolution.
+2. The customer can submit or update one 1-5 star rating.
+3. The handling administrator receives a customer-feedback notification.
+4. Feedback appears in administrator complaint views and Analysis.
+
+## Analysis and SLA
+
+The Analysis page loads database statistics from:
+
+```text
+GET /api/analysis/stats
 ```
 
-**Using the token:**
-```
-Authorization: Bearer eyJ...
+Opening the page does not call OpenAI. AI content is generated only after the
+administrator clicks **Generate**, which calls:
+
+```text
+POST /api/analysis/ai
 ```
 
----
+The project currently uses a 15-day complaint resolution SLA:
 
-## Source Code Structure
+- Open after more than 15 days: SLA breach.
+- Open between days 12 and 15: SLA warning.
+- `HEALTHY`: no breaches and average resolution time below 10 days.
+- `WARNING`: at least one breach or average resolution time from 10 to 15 days.
+- `CRITICAL`: more than five breaches or average resolution time above 15 days.
 
+This is an application business rule, not an external legal requirement.
+The seeded dataset intentionally includes overdue complaints for dashboard testing.
+
+## Main API Endpoints
+
+### Authentication
+
+| Method | Endpoint | Access |
+|---|---|---|
+| `POST` | `/api/auth/register` | Public |
+| `POST` | `/api/auth/login` | Public |
+| `GET` | `/api/auth/me` | Authenticated |
+
+### Complaints
+
+| Method | Endpoint | Access |
+|---|---|---|
+| `POST` | `/api/complaints` | CUSTOMER |
+| `GET` | `/api/complaints/my` | CUSTOMER |
+| `GET` | `/api/complaints/{code}` | CUSTOMER or ADMIN |
+| `GET` | `/api/complaints` | ADMIN |
+| `GET` | `/api/complaints/submitted` | ADMIN |
+| `PUT` | `/api/complaints/{id}` | CUSTOMER |
+| `PUT` | `/api/complaints/{id}/receive` | ADMIN |
+| `PUT` | `/api/complaints/{id}/validate` | ADMIN |
+| `PUT` | `/api/complaints/{id}/reject-validation` | ADMIN |
+| `PUT` | `/api/complaints/{id}/resolution` | ADMIN |
+| `PUT` | `/api/complaints/{id}/send-response` | ADMIN |
+| `PUT` | `/api/complaints/{code}/feedback` | CUSTOMER |
+
+### Notifications and Analysis
+
+| Method | Endpoint | Access |
+|---|---|---|
+| `GET` | `/api/notifications/my` | Authenticated |
+| `PUT` | `/api/notifications/{id}/read` | Authenticated owner |
+| `PUT` | `/api/notifications/read-all` | Authenticated |
+| `GET` | `/api/analysis/stats` | ADMIN |
+| `POST` | `/api/analysis/ai` | ADMIN |
+
+See Swagger UI for request and response schemas.
+
+## Build and Test
+
+Backend tests:
+
+```bash
+cd backend
+mvn test
 ```
-backend/src/main/java/com/company/complaints/
-├── ComplaintsApplication.java          # Entry point
-├── config/
-│   ├── SecurityConfig.java             # Spring Security, CORS, JWT filter wiring
-│   └── OpenApiConfig.java              # Swagger UI configuration
-├── controller/
-│   └── AuthController.java             # All /api/auth/** endpoints
-├── dto/
-│   ├── request/
-│   │   ├── LoginRequest.java
-│   │   └── RegisterRequest.java
-│   └── response/
-│       ├── ApiResponse.java            # Standard { success, message, data } envelope
-│       └── AuthResponse.java           # Token + user info returned after login/register
-├── entity/
-│   └── User.java                       # JPA entity, implements UserDetails
-├── enums/
-│   └── Role.java                       # CUSTOMER, ADMIN
-├── exception/
-│   ├── CustomExceptions.java           # Domain-specific exception classes
-│   └── GlobalExceptionHandler.java     # Maps exceptions to HTTP responses
-├── repository/
-│   └── UserRepository.java             # findByEmail, existsByEmail
-├── security/
-│   ├── JwtTokenProvider.java           # Generate and validate JWT tokens
-│   ├── JwtAuthenticationFilter.java    # Extracts token from each request
-│   └── UserDetailsServiceImpl.java     # Loads user by email for Spring Security
-└── service/
-    └── AuthService.java                # Login, register, getCurrentUser logic
 
-backend/src/main/resources/
-├── application.properties              # DB, JWT, server config
-└── data.sql                            # Demo data loaded only with the seed profile
+Backend package:
+
+```bash
+cd backend
+mvn clean package
 ```
+
+Frontend production build:
+
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+Preview the frontend build:
+
+```bash
+npm run preview
+```
+
+## Troubleshooting
+
+### Backend reports that a table does not exist
+
+The default profile preserves existing data and does not initialize SQL automatically.
+For a new local database, run the seed profile once as described in Quick Start.
+
+### Backend reports password authentication failed
+
+Update `DB_USERNAME` and `DB_PASSWORD` in `backend/.env`, then restart the backend.
+
+Verify the connection manually:
+
+```bash
+psql -h localhost -U postgres -d db -c "SELECT version();"
+```
+
+### Port 8080 is already in use
+
+macOS/Linux:
+
+```bash
+lsof -i :8080
+kill <PID>
+```
+
+PowerShell:
+
+```powershell
+$processId = (Get-NetTCPConnection -LocalPort 8080).OwningProcess
+Stop-Process -Id $processId -Force
+```
+
+### Frontend cannot reach the backend
+
+- Confirm the backend is running on port `8080`.
+- Confirm the frontend is running through `npm run dev`.
+- Check `VITE_API_BASE_URL` if using a custom backend URL.
+- Check `CORS_ALLOWED_ORIGINS` if the frontend uses a different origin.
+
+### AI Insights do not contain a real model response
+
+Set a valid `OPENAI_API_KEY` in `backend/.env` and restart the backend.
+Normal complaint management and database analytics do not require OpenAI.
+
+## Detailed Documentation
+
+See [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md) for architecture, database
+tables, workflow rules, frontend routes, API details, and implementation notes.

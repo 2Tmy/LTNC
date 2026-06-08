@@ -6,6 +6,7 @@ import com.company.complaints.dto.MonthlyTrendDto;
 import com.company.complaints.enums.Category;
 import com.company.complaints.enums.ComplaintStatus;
 import com.company.complaints.repository.ComplaintRepository;
+import com.company.complaints.repository.ComplaintFeedbackRepository;
 import com.company.complaints.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,10 +32,15 @@ public class AnalysisService {
     private static final DateTimeFormatter GENERATED_AT_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final ComplaintRepository complaintRepository;
+    private final ComplaintFeedbackRepository feedbackRepository;
     private final UserRepository userRepository;
     private final OpenAiService openAiService;
 
-    public AnalysisResponseDto generateAnalysis() {
+    public AnalysisStatsDto getStats() {
+        return aggregateStats();
+    }
+
+    public AnalysisResponseDto generateAiAnalysis() {
         AnalysisStatsDto stats = aggregateStats();
         String prompt = buildPrompt(stats);
         String aiText;
@@ -43,8 +49,6 @@ public class AnalysisService {
         } catch (RuntimeException e) {
             log.warn("OpenAI analysis failed, returning stats with fallback insights", e);
             aiText = """
-                    HEALTH: WARNING
-
                     TREND_SUMMARY:
                     Không thể tải phân tích AI tại thời điểm này. Dữ liệu thống kê vẫn được cập nhật từ hệ thống.
 
@@ -146,6 +150,31 @@ public class AnalysisService {
         Double avgComplaintsPerCustomer = totalCustomers > 0
                 ? totalComplaints.doubleValue() / totalCustomers.doubleValue()
                 : 0.0;
+
+        long totalFeedback = feedbackRepository.count();
+        Double averageRating = feedbackRepository.findAverageRating();
+        if (averageRating == null) {
+            averageRating = 0.0;
+        }
+        long successfulResolved = Math.max(0L, totalResolved - rejected);
+        double feedbackRate = successfulResolved > 0
+                ? (totalFeedback * 100.0) / successfulResolved
+                : 0.0;
+        long lowRatingCount = feedbackRepository.countByRatingLessThanEqual(2);
+        Map<Integer, Long> ratingDistribution = new LinkedHashMap<>();
+        for (int rating = 1; rating <= 5; rating++) {
+            ratingDistribution.put(rating, 0L);
+        }
+        List<Object[]> ratingRows = feedbackRepository.countGroupByRating();
+        if (ratingRows != null) {
+            for (Object[] row : ratingRows) {
+                if (row != null && row.length >= 2
+                        && row[0] instanceof Number rating
+                        && row[1] instanceof Number count) {
+                    ratingDistribution.put(rating.intValue(), count.longValue());
+                }
+            }
+        }
 
         LocalDateTime sixMonthsAgo = LocalDateTime.now().minusMonths(6)
                 .withDayOfMonth(1)
@@ -272,6 +301,11 @@ public class AnalysisService {
                 .activeCustomers(activeCustomers)
                 .customersWithComplaints(customersWithComplaints)
                 .avgComplaintsPerCustomer(avgComplaintsPerCustomer)
+                .totalFeedback(totalFeedback)
+                .averageRating(averageRating)
+                .feedbackRate(feedbackRate)
+                .lowRatingCount(lowRatingCount)
+                .ratingDistribution(ratingDistribution)
                 .monthlyTrend(monthlyTrend)
                 .build();
     }
@@ -329,14 +363,15 @@ public class AnalysisService {
                 .append(" | Đang hoạt động: ").append(stats.getActiveCustomers())
                 .append(" | Có khiếu nại: ").append(stats.getCustomersWithComplaints())
                 .append(" | Avg/khách: ").append(String.format("%.2f", stats.getAvgComplaintsPerCustomer())).append("\n");
+        p.append("Phản hồi khách hàng:\n");
+        p.append("  Tổng lượt đánh giá: ").append(stats.getTotalFeedback()).append("\n");
+        p.append("  Điểm trung bình: ").append(String.format("%.2f", stats.getAverageRating())).append("/5\n");
+        p.append("  Tỷ lệ phản hồi: ").append(String.format("%.1f", stats.getFeedbackRate())).append("%\n");
+        p.append("  Đánh giá thấp (1-2 sao): ").append(stats.getLowRatingCount()).append("\n");
+        p.append("  Phân bố sao: ").append(stats.getRatingDistribution()).append("\n");
 
         p.append("\n=== YÊU CẦU ===\n");
         p.append("Chi dung dung so tu du lieu tren. Khong bia so. Khong them text ngoai format.\n\n");
-        p.append("HEALTH: [HEALTHY|WARNING|CRITICAL]\n");
-        p.append("Quy tac:\n");
-        p.append("  HEALTHY = slaBreachCount=0 VA avgDays<10\n");
-        p.append("  WARNING = slaBreachCount 1-5 HOAC avgDays 10-15\n");
-        p.append("  CRITICAL = slaBreachCount>5 HOAC avgDays>15\n\n");
         p.append("TREND_SUMMARY:\n");
         p.append("[4-5 cau, PHAI dung so cu the: thang cao nhat/thap nhat, phan tram thay doi thang gan nhat so voi thang truoc, danh muc nao tang/giam manh nhat.]\n\n");
         p.append("ROOT_CAUSE:\n");
@@ -356,7 +391,7 @@ public class AnalysisService {
     }
 
     private AnalysisResponseDto parseResponse(String aiText, AnalysisStatsDto stats) {
-        String health = "WARNING";
+        String health = determineSystemHealth(stats);
         String narrative = "";
         String trendSummary = "";
         String rootCause = "";
@@ -380,10 +415,6 @@ public class AnalysisService {
 
                 String upperLine = line.toUpperCase();
                 if (upperLine.startsWith("HEALTH:")) {
-                    String parsedHealth = line.substring(line.indexOf(':') + 1).trim().toUpperCase();
-                    if ("HEALTHY".equals(parsedHealth) || "WARNING".equals(parsedHealth) || "CRITICAL".equals(parsedHealth)) {
-                        health = parsedHealth;
-                    }
                     currentSection = "HEALTH";
                 } else if (upperLine.startsWith("NARRATIVE:")) {
                     currentSection = "NARRATIVE";
@@ -450,7 +481,6 @@ public class AnalysisService {
             trendSummary = "Không thể parse phần xu hướng từ phản hồi AI.";
             rootCause = "Không thể parse phần nguyên nhân gốc rễ từ phản hồi AI.";
             prediction = "Không thể parse phần dự đoán từ phản hồi AI.";
-            health = "WARNING";
             immediateActions = new ArrayList<>();
             shortTermActions = new ArrayList<>();
             weeklyActions = new ArrayList<>();
@@ -470,6 +500,20 @@ public class AnalysisService {
                 .systemHealth(health)
                 .generatedAt(LocalDateTime.now().format(GENERATED_AT_FORMATTER))
                 .build();
+    }
+
+    private String determineSystemHealth(AnalysisStatsDto stats) {
+        long slaBreaches = stats.getSlaBreachCount() != null ? stats.getSlaBreachCount() : 0L;
+        double avgResolutionDays =
+                stats.getAvgResolutionDays() != null ? stats.getAvgResolutionDays() : 0.0;
+
+        if (slaBreaches > 5 || avgResolutionDays > SLA_DAYS) {
+            return "CRITICAL";
+        }
+        if (slaBreaches > 0 || avgResolutionDays >= 10) {
+            return "WARNING";
+        }
+        return "HEALTHY";
     }
 
     private Map<String, Long> defaultCategoryCounts() {

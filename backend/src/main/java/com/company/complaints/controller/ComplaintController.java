@@ -5,7 +5,9 @@ import com.company.complaints.dto.request.UpdateComplaintRequest;
 import com.company.complaints.dto.request.ProposeResolutionRequest;
 import com.company.complaints.dto.request.RejectValidationRequest;
 import com.company.complaints.dto.request.ValidateComplaintRequest;
+import com.company.complaints.dto.request.SubmitFeedbackRequest;
 import com.company.complaints.dto.response.ApiResponse;
+import com.company.complaints.dto.response.ComplaintFeedbackResponse;
 import com.company.complaints.dto.response.ComplaintResponse;
 import com.company.complaints.service.ComplaintService;
 import jakarta.validation.Valid;
@@ -152,5 +154,15 @@ public class ComplaintController {
             Authentication authentication) {
         return ApiResponse.success("Response sent",
                 complaintService.sendResponse(id, authentication));
+    }
+
+    @PutMapping("/{code}/feedback")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ApiResponse<ComplaintFeedbackResponse> submitFeedback(
+            @PathVariable String code,
+            @Valid @RequestBody SubmitFeedbackRequest request,
+            Authentication authentication) {
+        return ApiResponse.success("Feedback saved",
+                complaintService.submitFeedback(code, request, authentication));
     }
 }

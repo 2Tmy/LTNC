@@ -54,4 +54,5 @@ public class ComplaintResponse {
     private LocalDateTime validatedAt;
     private LocalDateTime assignedAt;
     private LocalDateTime resolvedAt;
+    private ComplaintFeedbackResponse feedback;
 }

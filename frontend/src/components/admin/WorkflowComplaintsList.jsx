@@ -52,6 +52,8 @@ const matchesComplaintSearch = (complaint, keyword) =>
     complaint.status,
     complaint.rootCause,
     complaint.resolution,
+    complaint.feedback?.comment,
+    complaint.feedback?.rating,
   ]
     .filter(Boolean)
     .some((value) => String(value).toLowerCase().includes(keyword));
@@ -106,7 +108,24 @@ export default function WorkflowComplaintsList({
     }
 
     if (variant === "resolved") {
-      return <p className="text-xs text-slate-400">{complaint.resolvedAt}</p>;
+      return (
+        <div>
+          <p className="text-xs text-slate-400">{complaint.resolvedAt}</p>
+          {complaint.feedback ? (
+            <p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-amber-600">
+              <span
+                className="material-symbols-outlined text-[16px]"
+                style={{ fontVariationSettings: "'FILL' 1" }}
+              >
+                star
+              </span>
+              {complaint.feedback.rating}/5 feedback
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-slate-400">Awaiting feedback</p>
+          )}
+        </div>
+      );
     }
 
     return <p className="text-xs text-slate-400">{complaint.submittedAt}</p>;

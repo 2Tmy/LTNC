@@ -5,10 +5,13 @@ import com.company.complaints.dto.request.UpdateComplaintRequest;
 import com.company.complaints.dto.request.ProposeResolutionRequest;
 import com.company.complaints.dto.request.RejectValidationRequest;
 import com.company.complaints.dto.request.ValidateComplaintRequest;
+import com.company.complaints.dto.request.SubmitFeedbackRequest;
 import com.company.complaints.dto.response.ComplaintResponse;
 import com.company.complaints.dto.response.ComplaintAttachmentResponse;
+import com.company.complaints.dto.response.ComplaintFeedbackResponse;
 import com.company.complaints.entity.Complaint;
 import com.company.complaints.entity.ComplaintAttachment;
+import com.company.complaints.entity.ComplaintFeedback;
 import com.company.complaints.entity.ComplaintValidation;
 import com.company.complaints.entity.User;
 import com.company.complaints.enums.ComplaintStatus;
@@ -20,6 +23,7 @@ import com.company.complaints.exception.CustomExceptions.ComplaintStateException
 import com.company.complaints.exception.CustomExceptions.UserNotFoundException;
 import com.company.complaints.repository.ComplaintRepository;
 import com.company.complaints.repository.ComplaintAttachmentRepository;
+import com.company.complaints.repository.ComplaintFeedbackRepository;
 import com.company.complaints.repository.ComplaintValidationRepository;
 import com.company.complaints.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +60,7 @@ public class ComplaintService {
 
     private final ComplaintRepository complaintRepository;
     private final ComplaintAttachmentRepository attachmentRepository;
+    private final ComplaintFeedbackRepository feedbackRepository;
     private final ComplaintValidationRepository validationRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
@@ -294,6 +299,47 @@ public class ComplaintService {
         return toResponse(saveComplaint(complaint));
     }
 
+    @Transactional
+    public ComplaintFeedbackResponse submitFeedback(String code, SubmitFeedbackRequest request,
+                                                    Authentication authentication) {
+        User customer = getCurrentUser(authentication);
+        Complaint complaint = complaintRepository.findByComplaintCode(code)
+                .orElseThrow(() -> new ComplaintNotFoundException("Complaint not found: " + code));
+
+        if (!complaint.getCustomer().getId().equals(customer.getId())) {
+            throw new AccessDeniedException("You do not have permission to review this complaint");
+        }
+        if (complaint.getStatus() != ComplaintStatus.RESOLVED
+                || complaint.getResolution() == null
+                || complaint.getResolution().isBlank()) {
+            throw new ComplaintStateException(
+                    "Feedback can only be submitted after the admin sends a resolution");
+        }
+
+        ComplaintValidation validation = validationRepository.findByComplaintId(
+                Objects.requireNonNull(complaint.getId(), "Complaint ID is required")).orElse(null);
+        if (validation != null && validation.getValidationStatus() == ValidationStatus.INVALID) {
+            throw new ComplaintStateException("Rejected complaints cannot be reviewed");
+        }
+
+        ComplaintFeedback feedback = feedbackRepository.findByComplaintId(complaint.getId())
+                .orElseGet(() -> ComplaintFeedback.builder()
+                        .complaint(complaint)
+                        .customer(customer)
+                        .build());
+        feedback.setRating(request.getRating());
+        feedback.setComment(trimToNull(request.getComment()));
+
+        ComplaintFeedback saved = feedbackRepository.save(
+                Objects.requireNonNull(feedback, "Complaint feedback is required"));
+        notificationService.notifyHandlingAdmin(
+                complaint,
+                NotificationType.CUSTOMER_FEEDBACK,
+                "Customer feedback received",
+                complaint.getComplaintCode() + " received a " + saved.getRating() + "-star rating.");
+        return toFeedbackResponse(saved);
+    }
+
     /**
      * Customer action: update title/description while status is PENDING.
      * Increments editCount and refreshes lastEditedAt.
@@ -450,6 +496,7 @@ public class ComplaintService {
         User approvedBy  = c.getApprovedBy();
         List<ComplaintAttachment> attachments =
                 attachmentRepository.findByComplaintIdOrderByUploadedAtDesc(complaintId);
+        ComplaintFeedback feedback = feedbackRepository.findByComplaintId(complaintId).orElse(null);
 
         return ComplaintResponse.builder()
                 .id(complaintId)
@@ -493,6 +540,18 @@ public class ComplaintService {
                 .validatedAt(c.getValidatedAt())
                 .assignedAt(c.getAssignedAt())
                 .resolvedAt(c.getResolvedAt())
+                .feedback(feedback != null ? toFeedbackResponse(feedback) : null)
+                .build();
+    }
+
+    private ComplaintFeedbackResponse toFeedbackResponse(ComplaintFeedback feedback) {
+        return ComplaintFeedbackResponse.builder()
+                .id(feedback.getId())
+                .rating(feedback.getRating())
+                .comment(feedback.getComment())
+                .customerName(feedback.getCustomer().getName())
+                .createdAt(feedback.getCreatedAt())
+                .updatedAt(feedback.getUpdatedAt())
                 .build();
     }
 }

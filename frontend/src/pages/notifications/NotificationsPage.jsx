@@ -1,14 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import NotificationList from "../../components/notifications/NotificationList.jsx";
 import { useCurrentUser } from "../../hooks/useCurrentUser.js";
+import AdminSidebar from "../../layouts/AdminSidebar.jsx";
+import AdminTopBar from "../../layouts/AdminTopBar.jsx";
 import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
-import { getMyNotifications, markAllNotificationsRead, markNotificationRead } from "../../services/customerNotificationService.js";
+import { BACKEND_ROLES } from "../../routes/routePaths.js";
+import { getMyNotifications, markAllNotificationsRead, markNotificationRead } from "../../services/notificationService.js";
 
 export default function NotificationsPage() {
   const user = useCurrentUser();
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const isAdmin = user.role === BACKEND_ROLES.admin;
 
   const unreadCount = notifications.filter((notification) => notification.unread).length;
   const filteredNotifications = useMemo(() => {
@@ -19,32 +25,62 @@ export default function NotificationsPage() {
     return notifications;
   }, [filter, notifications]);
 
-  const load = async () => setNotifications(await getMyNotifications());
-  useEffect(() => { load(); }, []);
+  const load = async () => {
+    setLoadError("");
+    try {
+      setNotifications(await getMyNotifications());
+    } catch (error) {
+      setLoadError(
+        error.response?.data?.message || "Unable to load notifications. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
 
   const handleMarkRead = async (notificationId) => {
-    await markNotificationRead(notificationId);
-    await load();
+    setLoadError("");
+    try {
+      await markNotificationRead(notificationId);
+      await load();
+    } catch (error) {
+      setLoadError(
+        error.response?.data?.message || "Unable to update this notification."
+      );
+    }
   };
 
   const handleMarkAllRead = async () => {
-    await markAllNotificationsRead();
-    await load();
+    setLoadError("");
+    try {
+      await markAllNotificationsRead();
+      await load();
+    } catch (error) {
+      setLoadError(
+        error.response?.data?.message || "Unable to update notifications."
+      );
+    }
   };
 
   return (
     <div className="flex min-h-screen bg-background text-on-background">
-      <Sidebar user={user} />
+      {isAdmin ? <AdminSidebar /> : <Sidebar user={user} />}
 
       <main className="min-w-0 flex-1 bg-surface">
-        <TopBar user={user} />
+        {isAdmin ? <AdminTopBar user={user} /> : <TopBar user={user} />}
 
         <div className="mx-auto w-full max-w-5xl space-y-lg p-lg">
           <div className="flex flex-wrap items-start justify-between gap-md">
             <div>
               <h1 className="text-h1 text-on-surface">Notifications</h1>
               <p className="mt-xs text-body-md text-on-surface-variant">
-                Track complaint updates, evidence activity, and account alerts.
+                {isAdmin
+                  ? "Review customer feedback and important complaint activity."
+                  : "Track complaint updates, evidence activity, and account alerts."}
               </p>
             </div>
 
@@ -69,9 +105,17 @@ export default function NotificationsPage() {
               <p className="mt-xs text-h1 text-primary-container">{unreadCount}</p>
             </article>
             <article className="rounded-[0.75rem] border border-outline-variant bg-white p-md shadow-sm">
-              <p className="text-body-sm text-on-surface-variant">Resolved alerts</p>
+              <p className="text-body-sm text-on-surface-variant">
+                {isAdmin ? "Customer feedback" : "Resolved alerts"}
+              </p>
               <p className="mt-xs text-h1 text-green-700">
-                {notifications.filter((notification) => notification.type === "resolution").length}
+                {
+                  notifications.filter((notification) =>
+                    isAdmin
+                      ? notification.notificationType === "CUSTOMER_FEEDBACK"
+                      : notification.type === "resolution"
+                  ).length
+                }
               </p>
             </article>
           </section>
@@ -94,7 +138,22 @@ export default function NotificationsPage() {
             ))}
           </div>
 
-          <NotificationList notifications={filteredNotifications} onMarkRead={handleMarkRead} />
+          {loadError && (
+            <div className="rounded-[0.5rem] border border-red-200 bg-red-50 p-md text-body-sm text-red-700">
+              {loadError}
+            </div>
+          )}
+
+          {loading ? (
+            <section className="rounded-[0.75rem] border border-outline-variant bg-white p-xl text-center shadow-sm">
+              <span className="material-symbols-outlined animate-spin text-[32px] text-primary">
+                progress_activity
+              </span>
+              <p className="mt-sm text-body-md text-on-surface-variant">Loading notifications...</p>
+            </section>
+          ) : (
+            <NotificationList notifications={filteredNotifications} onMarkRead={handleMarkRead} />
+          )}
         </div>
       </main>
     </div>

@@ -4,7 +4,7 @@ import { useCurrentUser } from "../../hooks/useCurrentUser.js";
 import Sidebar from "../../layouts/Sidebar.jsx";
 import TopBar from "../../layouts/TopBar.jsx";
 import { ROUTE_PATHS } from "../../routes/routePaths.js";
-import { getComplaintByCode, submitFeedback, getFeedback } from "../../services/complaintService.js";
+import { getComplaintByCode, submitFeedback } from "../../services/complaintService.js";
 import EvidenceFileList from "../../components/complaint/EvidenceFileList.jsx";
 
 const statusStyles = {
@@ -23,12 +23,14 @@ const getStatusIndex = (status) => {
 
 function StarRating({ value, onChange }) {
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-1" role="radiogroup" aria-label="Complaint satisfaction rating">
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}
           type="button"
           onClick={() => onChange(star)}
+          aria-label={`${star} star${star === 1 ? "" : "s"}`}
+          aria-pressed={star === value}
           className={`text-[28px] transition ${star <= value ? "text-yellow-400" : "text-slate-300 hover:text-yellow-300"}`}
         >
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
@@ -51,22 +53,25 @@ export default function CustomerComplaintDetailPage() {
   const [feedbackComment, setFeedbackComment] = useState("");
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [feedbackError, setFeedbackError] = useState("");
 
   useEffect(() => {
     const fetchComplaint = async () => {
       setLoading(true);
       setLoadError("");
+      setFeedback(null);
+      setFeedbackRating(0);
+      setFeedbackComment("");
+      setFeedbackSubmitted(false);
+      setFeedbackError("");
       try {
         const data = await getComplaintByCode(complaintId);
         setComplaint(data);
-        if (data.status === "Resolved") {
-          const fb = await getFeedback(complaintId).catch(() => null);
-          if (fb && fb.rating) {
-            setFeedback(fb);
-            setFeedbackRating(fb.rating);
-            setFeedbackComment(fb.comment || "");
-            setFeedbackSubmitted(true);
-          }
+        if (data.feedback?.rating) {
+          setFeedback(data.feedback);
+          setFeedbackRating(data.feedback.rating);
+          setFeedbackComment(data.feedback.comment || "");
+          setFeedbackSubmitted(true);
         }
       } catch (error) {
         setComplaint(null);
@@ -85,12 +90,16 @@ export default function CustomerComplaintDetailPage() {
   const handleSubmitFeedback = async () => {
     if (feedbackRating === 0) return;
     setSubmittingFeedback(true);
+    setFeedbackError("");
     try {
-      await submitFeedback(complaintId, { rating: feedbackRating, comment: feedbackComment });
+      const savedFeedback = await submitFeedback(complaintId, {
+        rating: feedbackRating,
+        comment: feedbackComment,
+      });
       setFeedbackSubmitted(true);
-      setFeedback({ rating: feedbackRating, comment: feedbackComment });
+      setFeedback(savedFeedback);
     } catch (e) {
-      alert(e.response?.data?.message || "Unable to submit feedback.");
+      setFeedbackError(e.response?.data?.message || "Unable to submit feedback.");
     } finally {
       setSubmittingFeedback(false);
     }
@@ -215,7 +224,6 @@ export default function CustomerComplaintDetailPage() {
               {timelineSteps.map((step, index) => {
                 const isDone = index < activeIndex;
                 const isActive = index === activeIndex;
-                const isUpcoming = index > activeIndex;
 
                 return (
                   <div
@@ -238,7 +246,7 @@ export default function CustomerComplaintDetailPage() {
                       }`}
                     >
                       <span className="material-symbols-outlined text-[22px]">
-                        {isDone ? "check" : isUpcoming ? step.icon : step.icon}
+                        {isDone ? "check" : step.icon}
                       </span>
                     </div>
 
@@ -272,13 +280,6 @@ export default function CustomerComplaintDetailPage() {
                   <p className="text-label-md uppercase text-on-surface-variant">Complaint Code</p>
                   <p className="mt-xxs text-body-md text-on-surface">
                     {complaint.id || complaint.complaintCode || complaint.slug}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-label-md uppercase text-on-surface-variant">Backend ID</p>
-                  <p className="mt-xxs text-body-md text-on-surface">
-                    {complaint.rawId || "Not available"}
                   </p>
                 </div>
 
@@ -322,15 +323,6 @@ export default function CustomerComplaintDetailPage() {
                   </p>
                 </div>
 
-                <div>
-                  <p className="text-label-md uppercase text-on-surface-variant">Edit count</p>
-                  <p className="mt-xxs text-body-md text-on-surface">{complaint.editCount}</p>
-                </div>
-
-                <div>
-                  <p className="text-label-md uppercase text-on-surface-variant">Edit deadline</p>
-                  <p className="mt-xxs text-body-md text-on-surface">{complaint.editDeadline}</p>
-                </div>
               </div>
 
               <div>
@@ -340,24 +332,22 @@ export default function CustomerComplaintDetailPage() {
                 </p>
               </div>
 
-              {complaint.status === "Resolved" && complaint.resolution ? (
+              {complaint.status === "Resolved" && complaint.resolution && !complaint.isRejected && (
                 <div className="rounded-[0.75rem] border border-green-200 bg-green-50 p-md">
                   <div className="flex items-center gap-xs">
-                    <span className="material-symbols-outlined text-[20px] text-green-600">task_alt</span>
-                    <p className="text-label-md font-semibold uppercase text-green-700">Resolution from admin</p>
+                    <span className="material-symbols-outlined text-[20px] text-green-700">
+                      task_alt
+                    </span>
+                    <p className="text-label-md font-semibold uppercase text-green-700">
+                      Resolution from admin
+                    </p>
                   </div>
                   <p className="mt-xs whitespace-pre-line text-body-md leading-7 text-green-900">
                     {complaint.resolution}
                   </p>
                 </div>
-              ) : (
-                <div>
-                  <p className="text-label-md uppercase text-on-surface-variant">Resolution</p>
-                  <p className="mt-xs whitespace-pre-line rounded-[0.5rem] bg-slate-50 p-md text-body-md leading-7 text-on-surface-variant">
-                    {complaint.resolution || "No resolution has been proposed yet."}
-                  </p>
-                </div>
               )}
+
             </section>
 
             <aside className="space-y-md">
@@ -386,11 +376,11 @@ export default function CustomerComplaintDetailPage() {
                 <div className="mt-md"><EvidenceFileList files={complaint.evidence} /></div>
               </section>
 
-              {complaint.status === "Resolved" && (
+              {complaint.status === "Resolved" && complaint.resolution && !complaint.isRejected && (
                 <section className="rounded-[0.75rem] border border-green-200 bg-white p-lg shadow-sm">
                   <h2 className="text-h3 text-on-surface">Your feedback</h2>
                   <p className="mt-xxs text-body-sm text-on-surface-variant">
-                    How satisfied are you with the resolution?
+                    How satisfied are you with the handling of this complaint?
                   </p>
 
                   {feedbackSubmitted ? (
@@ -413,7 +403,10 @@ export default function CustomerComplaintDetailPage() {
                       )}
                       <button
                         type="button"
-                        onClick={() => setFeedbackSubmitted(false)}
+                        onClick={() => {
+                          setFeedbackSubmitted(false);
+                          setFeedbackError("");
+                        }}
                         className="text-body-sm text-primary hover:underline"
                       >
                         Edit feedback
@@ -429,6 +422,11 @@ export default function CustomerComplaintDetailPage() {
                         rows={3}
                         className="w-full rounded-[0.5rem] border border-outline-variant p-sm text-body-sm text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                       />
+                      {feedbackError && (
+                        <p className="rounded-[0.5rem] bg-red-50 p-sm text-body-sm text-red-700">
+                          {feedbackError}
+                        </p>
+                      )}
                       <button
                         type="button"
                         disabled={feedbackRating === 0 || submittingFeedback}

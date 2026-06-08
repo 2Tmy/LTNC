@@ -61,6 +61,11 @@ const emptyStats = {
   activeCustomers: 0,
   customersWithComplaints: 0,
   avgComplaintsPerCustomer: 0,
+  totalFeedback: 0,
+  averageRating: 0,
+  feedbackRate: 0,
+  lowRatingCount: 0,
+  ratingDistribution: {},
   monthlyTrend: [],
 };
 
@@ -152,32 +157,44 @@ function AiActionCard({ badge, badgeClass, title, items }) {
 
 export default function AnalysisPage() {
   const user = useCurrentUser();
-  const [analysis, setAnalysis] = useState(null);
+  const [stats, setStats] = useState(emptyStats);
+  const [aiAnalysis, setAiAnalysis] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
-  const [aiLoading, setAiLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [statsError, setStatsError] = useState("");
+  const [aiError, setAiError] = useState("");
 
-  const loadAnalysis = useCallback(async () => {
+  const loadStats = useCallback(async () => {
     setStatsLoading(true);
-    setAiLoading(true);
-    setError("");
+    setStatsError("");
 
     try {
-      const response = await apiClient.get("/api/analysis");
-      setAnalysis(response.data?.data || response.data);
+      const response = await apiClient.get("/api/analysis/stats");
+      setStats(response.data?.data || response.data || emptyStats);
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Không thể tải insights");
+      setStatsError(requestError.response?.data?.message || "Không thể tải dữ liệu phân tích.");
     } finally {
       setStatsLoading(false);
+    }
+  }, []);
+
+  const generateAiAnalysis = useCallback(async () => {
+    setAiLoading(true);
+    setAiError("");
+
+    try {
+      const response = await apiClient.post("/api/analysis/ai");
+      setAiAnalysis(response.data?.data || response.data);
+    } catch (requestError) {
+      setAiError(requestError.response?.data?.message || "Không thể tạo AI insights.");
+    } finally {
       setAiLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadAnalysis();
-  }, [loadAnalysis]);
-
-  const stats = analysis?.stats || emptyStats;
+    loadStats();
+  }, [loadStats]);
 
   const derived = useMemo(() => {
     const pending = numberValue(stats.countByStatus?.PENDING);
@@ -220,6 +237,11 @@ export default function AnalysisPage() {
       OTHER: numberValue(item.byCategory?.OTHER),
     }));
 
+    const ratingDistribution = [1, 2, 3, 4, 5].map((rating) => ({
+      rating: `${rating} star`,
+      count: numberValue(stats.ratingDistribution?.[rating]),
+    }));
+
     return {
       active: pending + validating + resolving,
       rejected,
@@ -229,10 +251,11 @@ export default function AnalysisPage() {
       monthlyPerformance,
       monthlyCustomers,
       monthlyComplaints,
+      ratingDistribution,
     };
   }, [stats]);
 
-  const health = analysis?.systemHealth || "WARNING";
+  const health = aiAnalysis?.systemHealth || "WARNING";
   const healthClassName = HEALTH_STYLES[health] || HEALTH_STYLES.WARNING;
 
   return (
@@ -251,13 +274,22 @@ export default function AnalysisPage() {
 
             <button
               type="button"
-              onClick={loadAnalysis}
-              className="inline-flex h-10 items-center gap-xs rounded-[0.5rem] bg-primary px-md text-button text-on-primary"
+              onClick={loadStats}
+              disabled={statsLoading}
+              className="inline-flex h-10 items-center gap-xs rounded-[0.5rem] bg-primary px-md text-button text-on-primary disabled:opacity-60"
             >
-              <span className="material-symbols-outlined text-[20px]">refresh</span>
-              Refresh AI
+              <span className={`material-symbols-outlined text-[20px] ${statsLoading ? "animate-spin" : ""}`}>
+                refresh
+              </span>
+              Refresh
             </button>
           </header>
+
+          {statsError && (
+            <div className="rounded-[0.5rem] border border-red-200 bg-red-50 p-md text-body-md text-red-700">
+              {statsError}
+            </div>
+          )}
 
           <section className="space-y-md">
             <h2 className="text-h2 text-on-surface">Complaint overview</h2>
@@ -395,20 +427,71 @@ export default function AnalysisPage() {
           </section>
 
           <section className="space-y-md">
+            <div>
+              <h2 className="text-h2 text-on-surface">Customer feedback</h2>
+              <p className="mt-xs text-body-md text-secondary">
+                Satisfaction metrics from resolved complaints that customers rated.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-md sm:grid-cols-2 xl:grid-cols-4">
+              <MetricCard
+                label="Average rating"
+                value={statsLoading ? "..." : formatNumber(stats.averageRating, 1)}
+                suffix={statsLoading ? "" : "/5"}
+                tone="amber"
+              />
+              <MetricCard
+                label="Feedback responses"
+                value={statsLoading ? "..." : formatNumber(stats.totalFeedback)}
+                tone="blue"
+              />
+              <MetricCard
+                label="Feedback rate"
+                value={statsLoading ? "..." : formatNumber(stats.feedbackRate, 1)}
+                suffix={statsLoading ? "" : "%"}
+                tone="emerald"
+              />
+              <MetricCard
+                label="Low ratings (1-2 stars)"
+                value={statsLoading ? "..." : formatNumber(stats.lowRatingCount)}
+                tone="red"
+              />
+            </div>
+            <ChartPanel title="Rating distribution">
+              {numberValue(stats.totalFeedback) > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={derived.ratingDistribution}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="rating" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <NoDataBlock message="Chưa có đánh giá nào từ khách hàng." />
+              )}
+            </ChartPanel>
+          </section>
+
+          <section className="space-y-md">
             {/* Section header */}
             <div className="flex flex-wrap items-center justify-between gap-md">
               <div className="flex items-center gap-sm">
                 <span className="material-symbols-outlined text-[22px] text-primary">smart_toy</span>
                 <h2 className="text-h2 text-on-surface">AI Insights</h2>
               </div>
-              {!aiLoading && !error && (
+              {!aiLoading && (
                 <button
                   type="button"
-                  onClick={loadAnalysis}
-                  className="inline-flex h-9 items-center gap-xs rounded-[0.5rem] border border-outline-variant bg-white px-md text-button text-on-surface hover:bg-surface-container-lowest"
+                  onClick={generateAiAnalysis}
+                  disabled={statsLoading}
+                  className="inline-flex h-9 items-center gap-xs rounded-[0.5rem] border border-outline-variant bg-white px-md text-button text-on-surface hover:bg-surface-container-lowest disabled:opacity-60"
                 >
-                  <span className="material-symbols-outlined text-[18px]">refresh</span>
-                  Refresh
+                  <span className="material-symbols-outlined text-[18px]">
+                    {aiAnalysis ? "refresh" : "auto_awesome"}
+                  </span>
+                  {aiAnalysis ? "Refresh" : "Generate"}
                 </button>
               )}
             </div>
@@ -422,21 +505,23 @@ export default function AnalysisPage() {
                 <SkeletonBlock className="h-28" />
                 <SkeletonBlock className="h-28" />
               </div>
-            ) : error ? (
+            ) : aiError ? (
               <div className="flex flex-wrap items-center justify-between gap-md rounded-[0.5rem] border border-red-200 bg-red-50 p-md">
                 <div className="flex items-center gap-sm">
                   <span className="material-symbols-outlined text-[20px] text-red-600">error</span>
-                  <p className="text-body-md font-medium text-red-700">Không thể tải AI insights</p>
+                  <p className="text-body-md font-medium text-red-700">{aiError}</p>
                 </div>
                 <button
                   type="button"
-                  onClick={loadAnalysis}
+                  onClick={generateAiAnalysis}
                   className="inline-flex h-9 items-center gap-xs rounded-[0.5rem] border border-red-300 bg-white px-md text-button text-red-700"
                 >
                   <span className="material-symbols-outlined text-[18px]">refresh</span>
                   Thử lại
                 </button>
               </div>
+            ) : !aiAnalysis ? (
+              null
             ) : (
               <>
                 {/* Health banner */}
@@ -447,7 +532,9 @@ export default function AnalysisPage() {
                     </span>
                     <span className="text-label-lg font-semibold">System health: {health}</span>
                   </div>
-                  <span className="text-body-sm opacity-75">Generated {analysis?.generatedAt || "N/A"}</span>
+                  <span className="text-body-sm opacity-75">
+                    Generated {aiAnalysis.generatedAt || "N/A"}
+                  </span>
                 </div>
 
                 {/* Analysis cards */}
@@ -455,21 +542,21 @@ export default function AnalysisPage() {
                   <AiAnalysisCard
                     icon="trending_up"
                     label="Xu hướng 6 tháng"
-                    content={analysis?.trendSummary}
+                    content={aiAnalysis.trendSummary}
                     accentClass="border-t-2 border-t-blue-500"
                     iconClass="text-blue-600"
                   />
                   <AiAnalysisCard
                     icon="manage_search"
                     label="Nguyên nhân gốc rễ"
-                    content={analysis?.rootCause}
+                    content={aiAnalysis.rootCause}
                     accentClass="border-t-2 border-t-amber-500"
                     iconClass="text-amber-600"
                   />
                   <AiAnalysisCard
                     icon="tips_and_updates"
                     label="Dự báo tháng tới"
-                    content={analysis?.prediction}
+                    content={aiAnalysis.prediction}
                     accentClass="border-t-2 border-t-violet-500"
                     iconClass="text-violet-600"
                   />
@@ -481,19 +568,19 @@ export default function AnalysisPage() {
                     badge="Ngay"
                     badgeClass="bg-red-100 text-red-700"
                     title="Immediate actions"
-                    items={analysis?.immediateActions}
+                    items={aiAnalysis.immediateActions}
                   />
                   <AiActionCard
                     badge="24–48h"
                     badgeClass="bg-amber-100 text-amber-700"
                     title="Short-term actions"
-                    items={analysis?.shortTermActions}
+                    items={aiAnalysis.shortTermActions}
                   />
                   <AiActionCard
                     badge="Tuần này"
                     badgeClass="bg-emerald-100 text-emerald-700"
                     title="Weekly actions"
-                    items={analysis?.weeklyActions}
+                    items={aiAnalysis.weeklyActions}
                   />
                 </div>
               </>

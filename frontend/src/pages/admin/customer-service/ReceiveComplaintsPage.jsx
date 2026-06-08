@@ -11,6 +11,7 @@ export default function ReceiveComplaintsPage() {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [actionError, setActionError] = useState("");
   const [receivingId, setReceivingId] = useState(null);
 
   const loadComplaints = async () => {
@@ -37,13 +38,15 @@ export default function ReceiveComplaintsPage() {
 
   const handleReceive = async (complaintId) => {
     setReceivingId(complaintId);
+    setActionError("");
 
     try {
       await receiveComplaint(complaintId);
       await loadComplaints();
     } catch (error) {
-      console.error("Receive complaint error:", error);
-      alert(error.response?.data?.message || "Unable to receive this complaint.");
+      setActionError(
+        error.response?.data?.message || "Unable to receive this complaint. Please try again."
+      );
     } finally {
       setReceivingId(null);
     }
@@ -57,6 +60,11 @@ export default function ReceiveComplaintsPage() {
         <AdminTopBar user={user} />
 
         <div className="mx-auto w-full max-w-6xl space-y-lg p-lg">
+          {actionError && (
+            <div className="rounded-[0.5rem] border border-red-200 bg-red-50 p-md text-body-sm text-red-700">
+              {actionError}
+            </div>
+          )}
           <WorkflowComplaintsList
             accent="amber"
             actionLabel="Receive"
