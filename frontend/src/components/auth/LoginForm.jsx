@@ -59,10 +59,10 @@ export default function LoginForm() {
   };
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+    <form className="space-y-3" onSubmit={handleSubmit} noValidate>
       {/* Email */}
       <div>
-        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="email">
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="email">
           Email address
         </label>
         <div className="relative">
@@ -85,7 +85,7 @@ export default function LoginForm() {
 
       {/* Password */}
       <div>
-        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="password">
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="password">
           Password
         </label>
         <div className="relative">
@@ -128,7 +128,7 @@ export default function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? (
           <>

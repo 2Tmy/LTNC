@@ -95,6 +95,11 @@ export default function AdminComplaintsListPage({ type = "all" }) {
             complaint.orderId,
             complaint.status,
             complaint.category,
+            complaint.priority,
+            complaint.description,
+            complaint.department,
+            complaint.rootCause,
+            complaint.resolution,
           ]
             .filter(Boolean)
             .some((value) => String(value).toLowerCase().includes(keyword));
