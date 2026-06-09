@@ -38,26 +38,25 @@ const accentStyles = {
   },
 };
 
-const matchesComplaintSearch = (complaint, keyword) => {
-  const searchFields = [
-    complaint.id || "",
-    complaint.complaintCode || "",
-    complaint.title || "",
-    complaint.customer || "",
-    complaint.email || "",
-    complaint.phone || "",
-    complaint.orderId || "",
-    complaint.category || "",
-    complaint.priority || "",
-    complaint.status || "",
-    complaint.rootCause || "",
-    complaint.resolution || "",
-    complaint.description || "",
-    complaint.department || "",
-  ].map((field) => String(field).toLowerCase());
-
-  return searchFields.some((field) => field.includes(keyword));
-};
+const matchesComplaintSearch = (complaint, keyword) =>
+  [
+    complaint.id,
+    complaint.complaintCode,
+    complaint.title,
+    complaint.customer,
+    complaint.email,
+    complaint.phone,
+    complaint.orderId,
+    complaint.category,
+    complaint.priority,
+    complaint.status,
+    complaint.rootCause,
+    complaint.resolution,
+    complaint.feedback?.comment,
+    complaint.feedback?.rating,
+  ]
+    .filter(Boolean)
+    .some((value) => String(value).toLowerCase().includes(keyword));
 
 export default function WorkflowComplaintsList({
   accent = "blue",
