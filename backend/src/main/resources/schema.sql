@@ -3,20 +3,18 @@
 
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS complaint_feedbacks CASCADE;
-DROP TABLE IF EXISTS complaint_comments CASCADE;
 DROP TABLE IF EXISTS complaint_attachments CASCADE;
-DROP TABLE IF EXISTS complaint_histories CASCADE;
 DROP TABLE IF EXISTS complaint_validations CASCADE;
 DROP TABLE IF EXISTS complaints CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 CREATE TABLE users (
-    id         BIGSERIAL    NOT NULL,
+    id         BIGSERIAL     ,
     name       VARCHAR(255) NOT NULL,
     email      VARCHAR(255) NOT NULL,
     phone      VARCHAR(50),
-    password   VARCHAR(255) NOT NULL,
-    role       VARCHAR(50)  NOT NULL,
+    password   VARCHAR(255) ,
+    role       VARCHAR(50) ,
     enabled    BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP    NOT NULL DEFAULT NOW(),
@@ -32,8 +30,9 @@ CREATE INDEX idx_users_role ON users (role);
 
 CREATE TABLE complaints (
     id             BIGSERIAL    NOT NULL,
-    complaint_code VARCHAR(50)  NOT NULL,
+    complaint_code VARCHAR(50)  NOT NULL ,
     customer_id    BIGINT       NOT NULL,
+
     title          VARCHAR(500) NOT NULL,
     description    TEXT         NOT NULL,
     order_id       VARCHAR(100),
@@ -44,12 +43,15 @@ CREATE TABLE complaints (
     category       VARCHAR(100) NOT NULL,
     priority       VARCHAR(50),
     status         VARCHAR(50)  NOT NULL DEFAULT 'PENDING',
+
     edit_count     INTEGER      NOT NULL DEFAULT 0,
     last_edited_at TIMESTAMP,
     edit_deadline  TIMESTAMP,
+
     validated_by   BIGINT,
     assigned_to    BIGINT,
     approved_by    BIGINT,
+    
     created_at     TIMESTAMP    NOT NULL DEFAULT NOW(),
     updated_at     TIMESTAMP    NOT NULL DEFAULT NOW(),
     submitted_at   TIMESTAMP    NOT NULL DEFAULT NOW(),
@@ -77,9 +79,15 @@ CREATE TABLE complaints (
         ))
 );
 
-CREATE INDEX idx_complaints_customer ON complaints (customer_id);
-CREATE INDEX idx_complaints_status ON complaints (status);
-CREATE INDEX idx_complaints_code ON complaints (complaint_code);
+CREATE UNIQUE INDEX idx_complaints_code       ON complaints (complaint_code);
+CREATE INDEX idx_complaints_customer          ON complaints (customer_id);
+CREATE INDEX idx_complaints_status            ON complaints (status);
+CREATE INDEX idx_complaints_priority          ON complaints (priority);
+CREATE INDEX idx_complaints_category          ON complaints (category);
+CREATE INDEX idx_complaints_status_pri        ON complaints (status, priority);
+CREATE INDEX idx_complaints_submitted         ON complaints (submitted_at);
+CREATE INDEX idx_complaints_resolved          ON complaints (resolved_at);
+
 
 CREATE TABLE complaint_feedbacks (
     id           BIGSERIAL NOT NULL,
@@ -107,11 +115,13 @@ CREATE TABLE complaint_validations (
     complaint_id            BIGINT      NOT NULL,
     validated_by            BIGINT      NOT NULL,
     validation_status       VARCHAR(50) NOT NULL,
+
     is_information_complete  BOOLEAN     NOT NULL DEFAULT FALSE,
     is_within_scope          BOOLEAN     NOT NULL DEFAULT FALSE,
     is_order_reference_valid BOOLEAN     NOT NULL DEFAULT FALSE,
     is_description_valid     BOOLEAN     NOT NULL DEFAULT FALSE,
     is_evidence_valid        BOOLEAN     NOT NULL DEFAULT FALSE,
+
     rejection_reason        TEXT,
     missing_information     TEXT,
     validation_notes        TEXT,
@@ -127,33 +137,30 @@ CREATE TABLE complaint_validations (
         CHECK (validation_status IN ('VALID', 'INVALID'))
 );
 
-CREATE TABLE complaint_histories (
-    id              BIGSERIAL   NOT NULL,
-    complaint_id    BIGINT      NOT NULL,
-    changed_by      BIGINT      NOT NULL,
-    action_type     VARCHAR(50) NOT NULL,
-    old_status      VARCHAR(50),
-    new_status      VARCHAR(50),
-    old_title       VARCHAR(500),
-    new_title       VARCHAR(500),
-    old_description TEXT,
-    new_description TEXT,
-    file_name       VARCHAR(500),
-    file_size       BIGINT,
-    reason          TEXT,
-    changed_at      TIMESTAMP   NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT pk_complaint_histories PRIMARY KEY (id),
-    CONSTRAINT fk_complaint_histories_complaint
-        FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE,
-    CONSTRAINT fk_complaint_histories_user
-        FOREIGN KEY (changed_by) REFERENCES users(id),
-    CONSTRAINT chk_complaint_histories_action
-        CHECK (action_type IN ('STATUS_CHANGED', 'INFO_UPDATED', 'FILE_UPLOADED', 'FILE_DELETED'))
+CREATE INDEX idx_validations_complaint  ON complaint_validations (complaint_id);
+CREATE INDEX idx_validations_by         ON complaint_validations (validated_by);
+CREATE INDEX idx_validations_status     ON complaint_validations (validation_status);
+
+
+CREATE TABLE complaint_feedbacks (
+    id              BIGSERIAL       PRIMARY KEY,
+    complaint_id    BIGINT          NOT NULL UNIQUE REFERENCES complaints(id) ON DELETE CASCADE,
+    customer_id     BIGINT          NOT NULL REFERENCES users(id),
+ 
+    rating          INT             NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment         TEXT,
+ 
+    created_at      TIMESTAMP       NOT NULL,
+    updated_at      TIMESTAMP       NOT NULL
 );
+ 
+CREATE INDEX idx_feedbacks_complaint    ON complaint_feedbacks (complaint_id);
+CREATE INDEX idx_feedbacks_customer     ON complaint_feedbacks (customer_id);
+CREATE INDEX idx_feedbacks_rating       ON complaint_feedbacks (rating);
+ 
 
-CREATE INDEX idx_complaint_histories_complaint
-    ON complaint_histories (complaint_id, changed_at);
+
 
 CREATE TABLE complaint_attachments (
     id                BIGSERIAL    NOT NULL,
@@ -173,32 +180,15 @@ CREATE TABLE complaint_attachments (
     CONSTRAINT fk_complaint_attachments_user
         FOREIGN KEY (uploaded_by) REFERENCES users(id)
 );
+CREATE INDEX idx_attachments_complaint  ON complaint_attachments (complaint_id);
+CREATE INDEX idx_attachments_uploader   ON complaint_attachments (uploaded_by);
+ 
 
-CREATE INDEX idx_complaint_attachments_complaint
-    ON complaint_attachments (complaint_id, uploaded_at);
-
-CREATE TABLE complaint_comments (
-    id           BIGSERIAL NOT NULL,
-    complaint_id BIGINT    NOT NULL,
-    user_id      BIGINT    NOT NULL,
-    comment_text TEXT      NOT NULL,
-    is_internal  BOOLEAN   NOT NULL DEFAULT FALSE,
-    created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT pk_complaint_comments PRIMARY KEY (id),
-    CONSTRAINT fk_complaint_comments_complaint
-        FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE,
-    CONSTRAINT fk_complaint_comments_user
-        FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
-CREATE INDEX idx_complaint_comments_complaint
-    ON complaint_comments (complaint_id, created_at);
 
 CREATE TABLE notifications (
     id           BIGSERIAL    NOT NULL,
     user_id      BIGINT       NOT NULL,
-    complaint_id BIGINT,
+    complaint_id BIGINT       NOT NULL,
     title        VARCHAR(500) NOT NULL,
     message      TEXT         NOT NULL,
     type         VARCHAR(50)  NOT NULL,

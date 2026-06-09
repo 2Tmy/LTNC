@@ -3,6 +3,8 @@ package com.company.complaints.entity;
 import com.company.complaints.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
+
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -43,7 +45,17 @@ public class User implements UserDetails {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+
+    public boolean isAdmin() {
+        return role == Role.ADMIN;
+    }
+ 
+    public boolean isCustomer() {
+        return role == Role.CUSTOMER;
+    }
 
     @PrePersist
     protected void onCreate() {

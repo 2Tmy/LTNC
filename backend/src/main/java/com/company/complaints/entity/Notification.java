@@ -7,7 +7,13 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "notifications", indexes = {
+    @Index(name = "idx_notif_user", columnList = "user_id"),
+    @Index(name = "idx_notif_unread", columnList = "user_id, is_read"),
+    @Index(name = "idx_notif_complaint", columnList = "complaint_id"),
+    @Index(name = "idx_notif_type", columnList = "type"),
+    @Index(name = "idx_notif_created", columnList = "created_at")
+})
 @Getter
 @Setter
 @Builder
@@ -56,4 +62,23 @@ public class Notification {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+
+            // ==================== HELPER ====================
+ 
+    public void markAsRead() {
+        this.isRead = true;
+        this.readAt = LocalDateTime.now();
+    }
+ 
+    public void markAsUnread() {
+        this.isRead = false;
+        this.readAt = null;
+    }
 }
+ 
+
+
+
+
+
+
