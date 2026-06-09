@@ -21,7 +21,7 @@ Thumbs.db
 .classpath
 .settings/
 *.sublime-workspace
-
+.claude/
 # =========================
 # Backend (Spring Boot / Java / Maven)
 # =========================
