@@ -143,24 +143,6 @@ CREATE INDEX idx_validations_by         ON complaint_validations (validated_by);
 CREATE INDEX idx_validations_status     ON complaint_validations (validation_status);
 
 
-CREATE TABLE complaint_feedbacks (
-    id              BIGSERIAL       PRIMARY KEY,
-    complaint_id    BIGINT          NOT NULL UNIQUE REFERENCES complaints(id) ON DELETE CASCADE,
-    customer_id     BIGINT          NOT NULL REFERENCES users(id),
- 
-    rating          INT             NOT NULL CHECK (rating >= 1 AND rating <= 5),
-    comment         TEXT,
- 
-    created_at      TIMESTAMP       NOT NULL,
-    updated_at      TIMESTAMP       NOT NULL
-);
- 
-CREATE INDEX idx_feedbacks_complaint    ON complaint_feedbacks (complaint_id);
-CREATE INDEX idx_feedbacks_customer     ON complaint_feedbacks (customer_id);
-CREATE INDEX idx_feedbacks_rating       ON complaint_feedbacks (rating);
- 
-
-
 
 CREATE TABLE complaint_attachments (
     id                BIGSERIAL    NOT NULL,

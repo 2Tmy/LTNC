@@ -103,6 +103,7 @@ DB_URL=jdbc:postgresql://localhost:5432/db
 DB_USERNAME=postgres
 DB_PASSWORD=your-postgres-password
 
+
 JWT_SECRET=replace-this-with-a-long-random-secret-at-least-32-characters
 JWT_EXPIRATION=86400000
 
@@ -157,24 +158,53 @@ Vite environment variables are read at startup and build time.
 ## 6. Database Initialization
 
 ### 6.1 Create the database
+#### Local PostgreSQL
+
+Default configuration for development. Connection properties reference localhost:6543 for faster database insfrastructure.
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/db
+spring.datasource.username=postgres
+spring.datasource.password=your-postgres-password
+```
+
+Create the database:
+bashpsql -h localhost -U postgres -c "CREATE DATABASE db;"
+#### Supabase (Online PostgreSQL)
+
+The project can connect to a Supabase-hosted PostgreSQL instance via Transaction Pooler.
+
+```properties
+spring.datasource.url=jdbc:postgresql://aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres
+spring.datasource.username=postgres.<project-ref>
+spring.datasource.password=<supabase-password>
+```
+Credentials are found at Supabase Dashboard → Settings → Database → Connection Pooling → Session mode.
+Performance considerations:
+
+
+Some networks resolve DNS to IPv6 first, which causes connection failures. Add -Djava.net.preferIPv4Stack=true to the JVM arguments to force IPv4. Never commit real Supabase credentials; use environment variables or .env files.
 
 ```bash
-psql -h localhost -U postgres
+-Djava.net.preferIPv4Stack=true
 ```
+#### Configuration file
+File: application.properties:
+ Sets spring.sql.init.mode=never and spring.jpa.hibernate.ddl-auto=update by default.
 
-```sql
-CREATE DATABASE db;
-\q
-```
+File: application-seed.properties
+Activated by -Dspring-boot.run.profiles=seed. Overrides spring.sql.init.mode=always and spring.jpa.defer-datasource-initialization=true.schema.sql
+Drops all tables with CASCADE and recreates them from scratch.data.sqlTruncates users and inserts the full demo dataset.
 
 ### 6.2 Seed profile for a new local environment
 
 `application-seed.properties` enables SQL initialization:
 
 ```properties
+spring.sql.init.mode=never
+```
+```seed-properties
 spring.sql.init.mode=always
 ```
-
 Run:
 
 macOS/Linux:
@@ -202,15 +232,14 @@ Stop the seeded backend after startup and restart without the seed profile.
 > preserved.
 
 ### 6.3 Normal startup
-
-The default profile uses:
-
-```properties
-spring.sql.init.mode=never
-spring.jpa.hibernate.ddl-auto=validate
+```bash
+cd backend
+mvn clean compile spring-boot:run                              # local
+mvn clean compile spring-boot:run \
+  -Dspring-boot.run.jvmArguments="-Djava.net.preferIPv4Stack=true"  # supabase
 ```
-
-Normal startup preserves data and validates that the database schema matches the entities.
+init.mode=never: no SQL scripts run. 
+ddl-auto=update: Hibernate only adds new columns or tables when entities change. Existing data and schema remain untouched.
 
 ### 6.4 Existing database migration
 
