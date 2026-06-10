@@ -98,31 +98,102 @@ cd LTNC
 ```
 
 ### 2. Create the PostgreSQL database
+# Database
 
-Start PostgreSQL, then run:
+## Deployment Options
+
+The project supports two database targets. Both use PostgreSQL 14+.
+
+### Local (localhost)
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/db
+spring.datasource.username=postgres
+spring.datasource.password=your-postgres-password
+```
+
+Create the database once:
 
 ```bash
-psql -h localhost -U postgres
+psql -h localhost -U postgres -c "CREATE DATABASE db;"
 ```
 
-Inside `psql`:
+### Online (Supabase)
 
-```sql
-CREATE DATABASE db;
-\q
+```properties
+spring.datasource.url=jdbc:postgresql://aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres
+spring.datasource.username=postgres.<project-ref>
+spring.datasource.password=<supabase-password>
 ```
 
-The default local connection is:
+Retrieve credentials from **Supabase → Settings → Database → Connection Pooling (Session mode)**.
 
-| Setting | Default |
+> **Performance note:** Supabase connections route through a cloud pooler, so the first
+> request after a cold start and each database script execution will be noticeably slower
+> than localhost. Expect 3–10 seconds of extra latency during seed or schema operations.
+> Normal CRUD queries after warm-up are comparable to local.
+
+When connecting from networks that resolve DNS to IPv6 first, add the JVM flag:
+
+```
+-Djava.net.preferIPv4Stack=true
+```
+
+## Startup Modes
+
+| Mode | Profile | `init.mode` | `ddl-auto` | Behaviour |
+|---|---|---|---|---|
+| **Normal** | _(none)_ | `never` | `update` | Preserves all data. Hibernate adds new columns/tables if entities change. |
+| **Seed** | `seed` | `always` | `update` | Runs `schema.sql` (DROP + CREATE) then `data.sql` (demo data). **Destructive.** |
+
+### Seed (first-time or reset)
+
+```bash
+cd backend
+
+# Local
+mvn clean compile spring-boot:run -Dspring-boot.run.profiles=seed
+
+# Supabase (add IPv4 flag)
+mvn clean compile spring-boot:run \
+  -Dspring-boot.run.jvmArguments="-Djava.net.preferIPv4Stack=true" \
+  -Dspring-boot.run.profiles=seed
+```
+
+Stop the server after seed completes. All subsequent starts use normal mode.
+
+### Normal (daily development)
+
+```bash
+cd backend
+mvn clean compile spring-boot:run
+
+# Supabase
+mvn clean compile spring-boot:run \
+  -Dspring-boot.run.jvmArguments="-Djava.net.preferIPv4Stack=true"
+```
+
+No SQL scripts run. Existing data is preserved.
+
+## Accounts
+
+All seeded accounts share the password `password123`.
+
+| Role | Email |
 |---|---|
-| Host | `localhost` |
-| Port | `5432` |
-| Database | `db` |
-| Username | `postgres` |
-| Password | `1` |
+| ADMIN | `admin@test.com` |
+| CUSTOMER | `customer001@gmail.com` through `customer100@gmail.com` |
 
-Use environment variables if your PostgreSQL credentials are different.
+## Configuration Files
+
+| File | Purpose |
+|---|---|
+| `application.properties` | Datasource URL, JPA, JWT, CORS, Swagger |
+| `application-seed.properties` | Overrides `spring.sql.init.mode=always` for seed profile |
+| `schema.sql` | DDL — drops and recreates all 6 tables |
+| `data.sql` | Inserts 1 admin, 100 customers, 100 complaints, validations, and feedback |
+
+
 
 ### 3. Configure the backend
 
