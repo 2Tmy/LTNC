@@ -41,18 +41,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = extractBearerToken(request);
 
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-            String      email       = jwtTokenProvider.getEmailFromToken(token);
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+            try {
+                String      email       = jwtTokenProvider.getEmailFromToken(token);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-            // Build an authenticated token with no credentials (already verified via JWT)
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
-            authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request));
+                // Build an authenticated token with no credentials (already verified via JWT)
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities());
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request));
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.debug("Authenticated user '{}' for URI: {}", email, request.getRequestURI());
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                log.debug("Authenticated user '{}' for URI: {}", email, request.getRequestURI());
+            } catch (Exception ex) {
+                // JWT is structurally valid but the user no longer exists in the database.
+                // Clear any partial auth state and let Spring Security return 401.
+                SecurityContextHolder.clearContext();
+                log.debug("JWT valid but user lookup failed for URI {}: {}", request.getRequestURI(), ex.getMessage());
+            }
         }
 
         filterChain.doFilter(request, response);

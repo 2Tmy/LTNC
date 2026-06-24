@@ -100,11 +100,9 @@ cd LTNC
 ### 2. Create the PostgreSQL database
 # Database
 
-## Deployment Options
+## Database
 
-The project supports two database targets. Both use PostgreSQL 14+.
-
-### Local (localhost)
+The project uses a local PostgreSQL 14+ instance.
 
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/db
@@ -118,27 +116,6 @@ Create the database once:
 psql -h localhost -U postgres -c "CREATE DATABASE db;"
 ```
 
-### Online (Supabase)
-
-```properties
-spring.datasource.url=jdbc:postgresql://aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres
-spring.datasource.username=postgres.<project-ref>
-spring.datasource.password=<supabase-password>
-```
-
-Retrieve credentials from **Supabase → Settings → Database → Connection Pooling (Session mode)**.
-
-> **Performance note:** Supabase connections route through a cloud pooler, so the first
-> request after a cold start and each database script execution will be noticeably slower
-> than localhost. Expect 3–10 seconds of extra latency during seed or schema operations.
-> Normal CRUD queries after warm-up are comparable to local.
-
-When connecting from networks that resolve DNS to IPv6 first, add the JVM flag:
-
-```
--Djava.net.preferIPv4Stack=true
-```
-
 ## Startup Modes
 
 | Mode | Profile | `init.mode` | `ddl-auto` | Behaviour |
@@ -150,14 +127,7 @@ When connecting from networks that resolve DNS to IPv6 first, add the JVM flag:
 
 ```bash
 cd backend
-
-# Local
 mvn clean compile spring-boot:run -Dspring-boot.run.profiles=seed
-
-# Supabase (add IPv4 flag)
-mvn clean compile spring-boot:run \
-  -Dspring-boot.run.jvmArguments="-Djava.net.preferIPv4Stack=true" \
-  -Dspring-boot.run.profiles=seed
 ```
 
 Stop the server after seed completes. All subsequent starts use normal mode.
@@ -167,10 +137,6 @@ Stop the server after seed completes. All subsequent starts use normal mode.
 ```bash
 cd backend
 mvn clean compile spring-boot:run
-
-# Supabase
-mvn clean compile spring-boot:run \
-  -Dspring-boot.run.jvmArguments="-Djava.net.preferIPv4Stack=true"
 ```
 
 No SQL scripts run. Existing data is preserved.

@@ -52,13 +52,11 @@ The system includes:
 | CSS processor | PostCSS + Autoprefixer | 8.4.49 / 10.4.20 |
 | React plugin | @vitejs/plugin-react | ^4.3.4 |
 
-### 2.3 Database and Infrastructure
+### 2.3 Database
 
 | Layer | Technology |
 |---|---|
-| Database | PostgreSQL 14+ |
-| Online host | Supabase (AWS ap-northeast-1) |
-| Pooler | Supabase Session Pooler (port 6543) |
+| Database | PostgreSQL 14+ (local) |
 
 ---
 
@@ -87,7 +85,7 @@ complaints/
 │   │   │   │   ├── service/       # Business logic (6 files)
 │   │   │   │   └── ComplaintsApplication.java
 │   │   │   └── resources/
-│   │   │       ├── application.properties       # Main config (Supabase active)
+│   │   │       ├── application.properties       # Main config (local PostgreSQL)
 │   │   │       ├── application-seed.properties  # Seed profile overrides
 │   │   │       ├── schema.sql                   # Destructive DDL (6 tables)
 │   │   │       └── data.sql                     # Demo seed data
@@ -173,9 +171,7 @@ Spring Boot REST API — http://localhost:8080
   │  Spring Data JPA / Hibernate maps entities
   │
   ▼
-PostgreSQL (local OR Supabase online)
-  │  Local:   localhost:5432
-  │  Online:  aws-1-ap-northeast-1.pooler.supabase.com:6543
+PostgreSQL — localhost:5432
 
 Optional external call:
 Spring Boot → OpenAI API  (only when ADMIN clicks "Generate" on the Analysis page)
@@ -254,8 +250,6 @@ Vite environment variables are read at startup and build time.
 
 ### 6.1 Create the database
 
-#### Local PostgreSQL
-
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/db
 spring.datasource.username=postgres
@@ -267,22 +261,6 @@ Create the database:
 ```bash
 psql -h localhost -U postgres -c "CREATE DATABASE db;"
 ```
-
-#### Supabase (Online PostgreSQL)
-
-The project connects to a Supabase-hosted PostgreSQL instance via Session Pooler (port 6543).
-
-```properties
-spring.datasource.url=jdbc:postgresql://aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres
-spring.datasource.username=postgres.<project-ref>
-spring.datasource.password=<supabase-password>
-```
-
-Credentials are found at Supabase Dashboard → Settings → Database → Connection Pooling → Session mode.
-
-Some networks resolve DNS to IPv6 first, which causes connection failures. Add
-`-Djava.net.preferIPv4Stack=true` to the JVM arguments to force IPv4.
-Never commit real Supabase credentials; use environment variables or `.env` files.
 
 #### Configuration files
 
@@ -321,13 +299,8 @@ Stop the seeded backend after startup and restart without the seed profile.
 ### 6.3 Normal startup
 
 ```bash
-# Local PostgreSQL
 cd backend
 mvn clean compile spring-boot:run
-
-# Supabase (force IPv4)
-mvn clean compile spring-boot:run \
-  -Dspring-boot.run.jvmArguments="-Djava.net.preferIPv4Stack=true"
 ```
 
 `init.mode=never` — no SQL scripts run on startup.
@@ -1194,4 +1167,3 @@ After setup, verify these flows:
 - Production frontend deployments must set `VITE_API_BASE_URL` when no reverse proxy is used.
 - Production CORS origins must be provided through `CORS_ALLOWED_ORIGINS`.
 - AI Insights are optional and do not block complaint operations when `OPENAI_API_KEY` is empty.
-- When connecting to Supabase, add `-Djava.net.preferIPv4Stack=true` to JVM args if DNS resolves to IPv6.
